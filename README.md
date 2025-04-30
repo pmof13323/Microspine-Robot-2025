@@ -2,12 +2,15 @@
 
 Codebase for the operation of the 2025 Microspine Robot
 
-## Contents
+## 2024 Project File Contents
  - `dynamixel.py` - dynamixel driver implementing serial comms
  - `servo.py` - servo class for each dynamixel
  - `gui.py` - graphical user interface implementation file
  - `main.py` - main file for running anchoring system
  - `port.py` - Port class file, used to connect to microcontroller
+
+## 2025 Project File Contents
+- TBD
 
 # Getting Started
 ## Software Setup
