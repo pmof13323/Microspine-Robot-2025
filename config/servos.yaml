@@ -1,0 +1,26 @@
+# example servos.yaml setup
+
+servos:
+  - id: 1
+    name: shoulder
+    model: XC330-T288-T
+    baud_rate: 57600
+    protocol_version: 2.0
+    operating_mode: position  # options: position, velocity, current, etc.
+    min_position: 0           # in raw units or degrees (convert as needed)
+    max_position: 4095
+    torque_limit: 1000        # optional, in units (value range depends on mode)
+    inverted: false           # true if motor direction needs inversion
+    offset: 0                 # any position offset for calibration
+
+  - id: 2
+    name: elbow
+    model: XC330-T288-T
+    baud_rate: 57600
+    protocol_version: 2.0
+    operating_mode: position
+    min_position: 0
+    max_position: 4095
+    torque_limit: 1000
+    inverted: true
+    offset: 10
