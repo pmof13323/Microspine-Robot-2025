@@ -1,0 +1,1 @@
+DEVICENAME = "COM3" 
