@@ -5,16 +5,13 @@ from datetime import datetime
 
 adc = ADCPi(0x68, 0x69, 18)  # bit rate is 18MHz
 
-csv_file = "voltage_log.csv"
-
-# inputting test parameters
+# inputting test parameters for filename
 test_title = input("Enter test title: ")
 test_number = input("Enter test number: ")
+csv_file = f"{test_title}_{test_number}.csv"
 
 # initialising CSV file with header
 header = [
-    "Test Title",
-    "Test Number",
     "Timestamp",
     "Sensor 1 Voltage (V)",
     "Sensor 2 Voltage (V)",
@@ -32,16 +29,12 @@ with open(csv_file, mode="w", newline="") as file:
         voltage2 = adc.read_voltage(2)
         voltage3 = adc.read_voltage(3)
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        writer.writerow(
-            [
-                test_title,
-                test_number,
-                timestamp,
-                f"{voltage1:.4f}",
-                f"{voltage2:.4f}",
-                f"{voltage3:.4f}",
-            ]
-        )
+        writer.writerow([
+            timestamp,
+            f"{voltage1:.4f}",
+            f"{voltage2:.4f}",
+            f"{voltage3:.4f}"
+        ])
         file.flush()
         print(f"{timestamp}|{voltage1:.4f}|{voltage2:.4f}|{voltage3:.4f}")
         time.sleep(0.1)
