@@ -22,9 +22,9 @@ using namespace ControlTableItem;
 // === Tunables (max speeds) ===
 // Adjust to taste; these are the peak |velocity| when stick/trigger is fully deflected.
 const int16_t TOES_MAX_SPEED      = 300;  // triggers → toes (variable)
-const int16_t HIP_YAW_MAX_SPEED   = 40;   // left stick X → hip yaw (variable)
-const int16_t HIP_PITCH_MAX_SPEED = 40;   // left stick Y → hip pitch (variable)
-const int16_t KNEE_MAX_SPEED      = 40;   // right stick Y → knee (variable)
+const int16_t HIP_YAW_MAX_SPEED   = 60;   // left stick X → hip yaw (variable)
+const int16_t HIP_PITCH_MAX_SPEED = 60;   // left stick Y → hip pitch (variable)
+const int16_t KNEE_MAX_SPEED      = 60;   // right stick Y → knee (variable)
 
 const uint32_t WATCHDOG_MS = 200;  // stop channel if no command within this time
 
@@ -60,13 +60,17 @@ void prepMotor(uint8_t id) {
   dxl.torqueOn(id);
 }
 
-// Normalize trigger value from [-1,1] (pygame) to [0,1]
+// Trigger deadzone
+const float TRIG_DEADZONE = 0.05f;
+
+// Converting -1 to 1 to 0 to 1
 static inline float normTrigger(float v) {
   float n = (v + 1.0f) * 0.5f;   // -1 -> 0, +1 -> 1
-  if (n < 0) n = 0;
-  if (n > 1) n = 1;
+  if (n < TRIG_DEADZONE) n = 0.0f;
+  if (n > 1.0f) n = 1.0f;
   return n;
 }
+
 
 // Clamp helper
 static inline int16_t clampI16(int32_t v, int16_t lim) {
@@ -124,15 +128,15 @@ void loop() {
           float n = normTrigger(val);
 
           if (axis == 2) {        // Left trigger
-            last_LT_norm = n;
+            last_LT_norm = normTrigger(val);
           } else if (axis == 5) { // Right trigger
-            last_RT_norm = n;
+            last_RT_norm = normTrigger(val);
           }
 
           // Net toes command: RT forward (+), LT reverse (-)
           float net = last_RT_norm - last_LT_norm;  // -1..+1
-          int16_t v = clampI16((int32_t)(net * TOES_MAX_SPEED), TOES_MAX_SPEED);
-          setVel(TOES, toes_vel_cmd, v);
+          int16_t speed = clampI16((int32_t)(net * TOES_MAX_SPEED), TOES_MAX_SPEED);
+          setVel(TOES, toes_vel_cmd, speed);
           last_toes_ms = now;
         }
       }

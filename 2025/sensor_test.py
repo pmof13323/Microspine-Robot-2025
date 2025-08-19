@@ -1,11 +1,13 @@
 from ADCPi import ADCPi
 import csv
 import time
+import math
 from datetime import datetime
 
 VCC = 5.0  # supply voltage 
 R_FIXED = 100000.0  # 100 kΩ known resistor
 EPS = 1e-6  # avoid division by zero 
+SCALEFACTOR = 1 # universal scale factor
 
 adc = ADCPi(0x68, 0x69, 18)  # bit rate is 18MHz
 
@@ -13,13 +15,17 @@ adc = ADCPi(0x68, 0x69, 18)  # bit rate is 18MHz
 # V = Vcc * R_fixed / (R_fixed + R_fsr)
 def resistance_from_voltage(v):
     v = min(max(v, EPS), VCC - EPS)
-    return R_FIXED * ((VCC - v) / v)  # ohms
+    return R_FIXED * (VCC / v) - R_FIXED # ohms
+
+#to do : update equation
+def grip_force_from_voltage(v):
+    return (math.exp((v+0.6733)/(0.6359))*9.81)
 
 
 # R[kΩ] = 336.04 * F[g]^(-0.712)
 def force_g_from_resistance_ohm(r_ohm):
     r_kohm = r_ohm / 1000.0
-    return (r_kohm / 336.04) ** (-1.0 / 0.712)
+    return SCALEFACTOR*(r_kohm / 336.04) ** (-1.0 / 0.712)
 
 
 def force_N_from_g(Fg):
@@ -38,20 +44,19 @@ header = [
     "Sensor 1 Raw Value",
     "Sensor 1 Voltage (V)",
     "Sensor 1 Resistance (Ohm)",
-    "Sensor 1 Force (g)",
     "Sensor 1 Force (N)",
 
     "Sensor 2 Raw Value",
     "Sensor 2 Voltage (V)",
     "Sensor 2 Resistance (Ohm)",
-    "Sensor 2 Force (g)",
     "Sensor 2 Force (N)",
 
     "Sensor 3 Raw Value",
     "Sensor 3 Voltage (V)",
     "Sensor 3 Resistance (Ohm)",
-    "Sensor 3 Force (g)",
     "Sensor 3 Force (N)",
+
+    "Total Grip Force (N)"
 ]
 
 # reading data and writing to CSV
@@ -65,20 +70,19 @@ with open(csv_file, mode="w", newline="") as file:
         raw1 = adc.read_raw(1)
         voltage1 = adc.read_voltage(1)
         r1 = resistance_from_voltage(voltage1)
-        f1_g = force_g_from_resistance_ohm(r1)
-        f1_N = force_N_from_g(f1_g)
+        f1_g = grip_force_from_voltage(voltage1)
 
         raw2 = adc.read_raw(2)
         voltage2 = adc.read_voltage(2)
         r2 = resistance_from_voltage(voltage2)
-        f2_g = force_g_from_resistance_ohm(r2)
-        f2_N = force_N_from_g(f2_g)
+        f2_g = grip_force_from_voltage(voltage2)
 
         raw3 = adc.read_raw(3)
         voltage3 = adc.read_voltage(3)
         r3 = resistance_from_voltage(voltage3)
-        f3_g = force_g_from_resistance_ohm(r3)
-        f3_N = force_N_from_g(f3_g)
+        f3_g = grip_force_from_voltage(voltage3)
+
+        total_f = f3_g+f2_g+f1_g
 
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
 
@@ -90,26 +94,25 @@ with open(csv_file, mode="w", newline="") as file:
                 f"{voltage1:.4f}",
                 f"{r1:.1f}",
                 f"{f1_g:.1f}",
-                f"{f1_N:.3f}",
             
                 f"{raw2:.4f}",
                 f"{voltage2:.4f}",
                 f"{r2:.1f}",
                 f"{f2_g:.1f}",
-                f"{f2_N:.3f}",
 
                 f"{raw3:.4f}",
                 f"{voltage3:.4f}",
                 f"{r3:.1f}",
                 f"{f3_g:.1f}",
-                f"{f3_N:.3f}",
+                
+                f"{total_f:.1f}",
             ]
         )
         file.flush()
         print(
             f"{timestamp} | "
-            f"S1 Raw={raw1:.4f} V={voltage1:.4f} R={r1:.1f}Ω F={f1_g:.1f}g/{f1_N:.3f}N | "
-            f"S2 Raw={raw2:.4f} V={voltage2:.4f} R={r2:.1f}Ω F={f2_g:.1f}g/{f2_N:.3f}N | "
-            f"S3 Raw={raw3:.4f} V={voltage3:.4f} R={r3:.1f}Ω F={f3_g:.1f}g/{f3_N:.3f}N"
+            f"S1 Raw={raw1:.4f} V={voltage1:.4f} R={r1:.1f}Ω F={f1_g:.1f}N | "
+            f"S2 Raw={raw2:.4f} V={voltage2:.4f} R={r2:.1f}Ω F={f2_g:.1f}N | "
+            f"S3 Raw={raw3:.4f} V={voltage3:.4f} R={r3:.1f}Ω F={f3_g:.1f}N | F={total_f:.1f}N"
         )
         time.sleep(0.1)  # 10 samples per second

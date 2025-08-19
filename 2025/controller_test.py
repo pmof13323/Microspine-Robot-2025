@@ -5,11 +5,11 @@ pygame.init()
 pygame.joystick.init()
 
 # open serial connection to OpenRB-150
-ser = serial.Serial('/dev/ttyACM2', 57600, timeout=1)
+ser = serial.Serial('/dev/ttyACM0', 57600, timeout=1)
 
 if not ser.is_open:
     print("failed to connect to OpenRB-150")
-    sys.exit()
+    sys.exit() 
 else:
     print("connection to OpenRB-150 established")
 
@@ -31,11 +31,11 @@ button_mapping = {
     5:"Right_bumper",
     6:"Back",
     7:"Start",
-    8:"Xbox",
+    8:"Xbox",    
     9:"Left_Stick",
-    10:"Right_Stick",
+    10:"Right_Stick", 
 }
-
+  b           
 print("printing input")
 
 try:
@@ -55,7 +55,7 @@ try:
             if (i == 2 or i == 5) and val >= -0.9:
                 print(f"trigger {i} moved: {val:.2f}")
                 ser.write((f"TRIGGER {i} {val:.2f}\n").encode())
-            elif (i != 2 and i != 5) and abs(val) > 0.1:
+            elif (i != 2 and i != 5) and abs(val) > 0.15:
                 print(f"stick {i} moved: {val:.2f}")
                 ser.write((f"STICK {i} {val:.2f}\n").encode())
 
@@ -63,7 +63,7 @@ try:
         D_pad = joystick.get_hat(0)
         if D_pad != (0, 0):
             if D_pad[0] == -1:
-                print("D-pad Left")
+                print("D-padrLeft")
                 ser.write(b"D_PAD LEFT\n")
             if D_pad[0] == 1:
                 print("D-pad Right")
