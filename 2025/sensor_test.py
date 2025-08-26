@@ -19,7 +19,14 @@ def resistance_from_voltage(v):
 
 #to do : update equation
 def grip_force_from_voltage(v):
-    return (math.exp((v+0.6733)/(0.6359))*9.81)
+    
+    if v < 2.564: 
+        force = v/0.0153*9.81
+    else: 
+    # log relationship calculated in carriage testing
+        force = (math.exp((v+0.6733)/(0.6359))*9.81)
+
+    return force
 
 
 # R[kΩ] = 336.04 * F[g]^(-0.712)
