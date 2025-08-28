@@ -295,33 +295,12 @@ void runWalk(int cycles = 1, uint16_t dwell_ms = 300){
     delay(5000);
 
   for(int c = 0; c < cycles; ++c){
-  
-    // ====== STEP 1: Lift Leg 1, sweep forward ======
-    // TODO: edit these to your gait
-    moveLeg(1,  10, -10, -20);   // lift & prep swing
-    delay(dwell_ms);
-    moveLeg(1,  15,  15, -60);   // swing forward & set down
-    delay(dwell_ms);
 
-    // ====== STEP 2: Lift Leg 3, sweep forward (diagonal pair) ======
-    moveLeg(3, -10, -10, -20);
-    delay(dwell_ms);
-    moveLeg(3, -15,  15, -60);
-    delay(dwell_ms);
+    // 
+    moveLeg(2, ,  10, -100);
+    
 
-    // ====== STEP 3: Lift Leg 2, sweep forward ======
-    moveLeg(2,  10, -10, -20);
-    delay(dwell_ms);
-    moveLeg(2,  15,  15, -60);
-    delay(dwell_ms);
-
-    // ====== STEP 4: Lift Leg 4, sweep forward ======
-    moveLeg(4, -10, -10, -20);
-    delay(dwell_ms);
-    moveLeg(4, -15,  15, -60);
-    delay(dwell_ms);
-
-    // ====== STEP 5: Return to stance (optional) ======
+    // Return to starting stance
     moveLeg(1, 0,  10, -100);
     moveLeg(2, 0,  10, -100);
     moveLeg(3, 0,  10, -100);
