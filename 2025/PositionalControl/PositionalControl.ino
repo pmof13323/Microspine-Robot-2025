@@ -292,22 +292,66 @@ void runWalk(int cycles = 1, uint16_t dwell_ms = 300){
     moveLeg(2, 0,  10, -100);
     moveLeg(3, 0,  10, -100);
     moveLeg(4, 0,  10, -100);
-    delay(5000);
+    delay(2000);
 
   for(int c = 0; c < cycles; ++c){
 
-    // 
-    moveLeg(2, ,  10, -100);
-    
+    // Leg 1 move
+    moveLeg(1, 10, 30, -120);
+    delay(200);
+    moveLeg(1, 20, 10, -100);
+    delay(200);
 
-    // Return to starting stance
-    moveLeg(1, 0,  10, -100);
-    moveLeg(2, 0,  10, -100);
-    moveLeg(3, 0,  10, -100);
-    moveLeg(4, 0,  10, -100);
+    // Shift 1
+    moveLeg(1, 15, 10, -100);
+    moveLeg(2, -5, 10, -100);
+    moveLeg(3, 5, 10, -100);
+    moveLeg(4, 5, 10, -100);
+    delay(200);
+    
+    // Leg 3 move
+    moveLeg(3, -5, 30, -120);
+    delay(200);
+    moveLeg(3, -15, 10, -100);
+    delay(200);
+
+    // Shift 2
+    moveLeg(1, 10, 10, -100);
+    moveLeg(2, -10, 10, -100);
+    moveLeg(3, -10, 10, -100);
+    moveLeg(4, 10, 10, -100);
+
+    // Leg 4 move
+    moveLeg(4, 0, 30, -120);
+    delay(200);
+    moveLeg(4, -10, 10, -100);
+    delay(200);
+
+    // Shift 3
+    moveLeg(1, 5, 10, -100);
+    moveLeg(2, -15, 10, -100);
+    moveLeg(3, -5, 10, -100);
+    moveLeg(4, -5, 10, -100);
+    delay(200);
+    
+    // Leg 2 move
+    moveLeg(2, -5, 30, -120);
+    delay(200);
+    moveLeg(2, 5, 10, -100);
+    delay(200);
+
+    // Shift 4
+    moveLeg(1, 0, 10, -100);
+    moveLeg(2, 0, 10, -100);
+    moveLeg(3, 0, 10, -100);
+    moveLeg(4, 0, 10, -100);
+
     delay(dwell_ms);
 
   DEBUG_SERIAL.println(F("✅ WALK done."));
+
+  }
+  
 }
 
 
