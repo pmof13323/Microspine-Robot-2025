@@ -122,6 +122,72 @@ void moveAllLegs(float theta_1, float theta_2, float theta_3){
   DEBUG_SERIAL.println(F("°"));
 }
 
+void runWalk(int cycles = 1){
+  if(cycles < 1) cycles = 1;
+
+    // Ready Stance
+    moveLeg(1, 0,  10, -100);
+    moveLeg(2, 0,  10, -100);
+    moveLeg(3, 0,  10, -100);
+    moveLeg(4, 0,  10, -100);
+    delay(2000);
+
+  for(int c = 0; c < cycles; ++c){
+
+    // Leg 1 move
+    moveLeg(1, 10, 30, -120);
+    delay(200);
+    moveLeg(1, 20, 10, -100);
+    delay(200);
+
+    // Shift 1
+    moveLeg(1, 15, 10, -100);
+    moveLeg(2, -5, 10, -100);
+    moveLeg(3, 5, 10, -100);
+    moveLeg(4, 5, 10, -100);
+    delay(200);
+    
+    // Leg 3 move
+    moveLeg(3, -5, 30, -120);
+    delay(200);
+    moveLeg(3, -15, 10, -100);
+    delay(200);
+
+    // Shift 2
+    moveLeg(1, 10, 10, -100);
+    moveLeg(2, -10, 10, -100);
+    moveLeg(3, -10, 10, -100);
+    moveLeg(4, 10, 10, -100);
+
+    // Leg 4 move
+    moveLeg(4, 0, 30, -120);
+    delay(200);
+    moveLeg(4, -10, 10, -100);
+    delay(200);
+
+    // Shift 3
+    moveLeg(1, 5, 10, -100);
+    moveLeg(2, -15, 10, -100);
+    moveLeg(3, -5, 10, -100);
+    moveLeg(4, -5, 10, -100);
+    delay(200);
+    
+    // Leg 2 move
+    moveLeg(2, -5, 30, -120);
+    delay(200);
+    moveLeg(2, 5, 10, -100);
+    delay(200);
+
+    // Shift 4
+    moveLeg(1, 0, 10, -100);
+    moveLeg(2, 0, 10, -100);
+    moveLeg(3, 0, 10, -100);
+    moveLeg(4, 0, 10, -100);
+
+  }
+  
+}
+
 // ================== Input helpers ==================
 static String readLineFlexible(){
   String line = DEBUG_SERIAL.readStringUntil('\n');
@@ -223,6 +289,13 @@ void loop(){
       moveLeg((uint8_t)leg, q1, q2, q3);
       return;
     }
+  }
+
+  // walk
+  if(c0 == "walk"){
+    int cycles = 5;
+    runWalk(cycles);
+    return;
   }
 
   DEBUG_SERIAL.println(F("❓ Unknown. Try:"));
