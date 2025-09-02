@@ -16,7 +16,7 @@ const uint32_t DXL_BAUD             = 57600;
 
 // ================== Motor map & limits ==================
 // IDs: 1..12 (1=Leg1 Yaw, 2=Leg1 Hip, 3=Leg1 Knee, 4..6=Leg2, 7..9=Leg3, 10..12=Leg4)
-const uint8_t IDS[] = {1,2,3,4,5,6,7,8,9,10,11,12};
+const uint8_t IDS[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
 const size_t  N_ALL = sizeof(IDS)/sizeof(IDS[0]);
 
 // Per-ID degree limits (yaw ±90°, pitch ±120°)
@@ -76,6 +76,38 @@ void applyProfiles(uint8_t id){
   dxl.writeControlTableItem(PROFILE_VELOCITY,     id, PROFILE_VEL);
   dxl.writeControlTableItem(PROFILE_ACCELERATION, id, PROFILE_ACC);
 }
+
+// ================= EE Operation =================
+void operateEE(uint8_t leg, int8_t mode, uint16_t ms) {
+  // legs are 1..4; EE motor IDs assumed 13..16 (12 + leg)
+  if (leg < 1 || leg > 4) {
+    DEBUG_SERIAL.println(F("⚠️  EE: leg must be 1..4"));
+    return;
+  }
+  uint8_t motor = 12 + leg;   // 13,14,15,16
+  const int32_t eeSpeed = 320; // raw speed units for setGoalVelocity
+
+  // Make sure the EE motor is reachable and in velocity mode
+  if (!dxl.ping(motor)) {
+    DEBUG_SERIAL.print(F("⚠️  EE motor ")); DEBUG_SERIAL.print(motor); DEBUG_SERIAL.println(F(" not responding"));
+    return;
+  }
+  dxl.torqueOff(motor);
+  dxl.setOperatingMode(motor, OP_VELOCITY); // ensure correct mode
+  dxl.torqueOn(motor);
+
+  // mode: -1 = engage, +1 = disengage, 0 = hold
+  int32_t v = (int32_t)mode * eeSpeed;
+  dxl.setGoalVelocity(motor, v);
+  delay(ms);
+  dxl.setGoalVelocity(motor, 0);
+
+  DEBUG_SERIAL.print(F("EE leg ")); DEBUG_SERIAL.print(leg);
+  DEBUG_SERIAL.print(F(" -> ")); DEBUG_SERIAL.print((mode < 0) ? F("engage") : (mode > 0 ? F("disengage") : F("hold")));
+  DEBUG_SERIAL.print(F(" for ")); DEBUG_SERIAL.print(ms); DEBUG_SERIAL.println(F(" ms"));
+}
+
+
 
 // ================== Leg motion ==================
 void moveLeg(uint8_t leg, float theta_1, float theta_2, float theta_3){
@@ -291,12 +323,35 @@ void loop(){
     }
   }
 
+  // EE Operation: ee <leg 1..4> <e|engage|d|disengage> <ms>
+  if (c0 == "ee" && n >= 4) {
+    if (!strIsInt(tok[1])) { DEBUG_SERIAL.println(F("Usage: ee <leg 1..4> <e|engage|d|disengage> <ms>")); return; }
+    uint8_t leg = (uint8_t)tok[1].toInt();
+
+    String op = tok[2]; op.toLowerCase();
+    int8_t mode = 0;
+    if (op == "e" || op == "engage")       mode = +1;
+    else if (op == "d" || op == "disengage") mode = -1;
+    else { DEBUG_SERIAL.println(F("⚠️  op must be e/engage or d/disengage")); return; }
+
+    if (!strIsInt(tok[3])) { DEBUG_SERIAL.println(F("⚠️  duration must be an integer ms")); return; }
+    long t = tok[3].toInt();
+    if (t < 0) t = 0;
+    if (t > 10000) t = 10000; // safety clamp
+    uint16_t ms = (uint16_t)t;
+
+    operateEE(leg, mode, ms);
+    return;
+  }
+
+
   // walk
   if(c0 == "walk"){
     int cycles = 5;
     runWalk(cycles);
     return;
   }
+
 
   DEBUG_SERIAL.println(F("❓ Unknown. Try:"));
   DEBUG_SERIAL.println(F("  leg 2 30 -15 45"));
