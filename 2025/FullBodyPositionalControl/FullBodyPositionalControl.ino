@@ -189,7 +189,6 @@ void setup(){
   DEBUG_SERIAL.println(F("\nReady. Usage:"));
   DEBUG_SERIAL.println(F("  leg <n> <yaw_deg> <hip_deg> <knee_deg>    (n = 1..4)"));
   DEBUG_SERIAL.println(F("  leg a <yaw_deg> <hip_deg> <knee_deg>      (move ALL legs)"));
-  DEBUG_SERIAL.println(F("  leg all <yaw_deg> <hip_deg> <knee_deg>    (alias)"));
 }
 
 void loop(){
@@ -208,14 +207,14 @@ void loop(){
   String c0 = tok[0];
   c0.toLowerCase();
 
-  // Command: leg <n|a|all> <theta1> <theta2> <theta3>
+  // Command: leg <n|a> <theta1> <theta2> <theta3>
   if(c0 == "leg" && n >= 5 && strIsNumber(tok[2]) && strIsNumber(tok[3]) && strIsNumber(tok[4])){
     String tgt = tok[1]; tgt.toLowerCase();
     float q1 = tok[2].toFloat();
     float q2 = tok[3].toFloat();
     float q3 = tok[4].toFloat();
 
-    if(tgt == "a" || tgt == "all"){
+    if(tgt == "a"){
       moveAllLegs(q1, q2, q3);
       return;
     }
