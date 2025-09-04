@@ -104,7 +104,7 @@ void driveGrip(uint8_t leg, float grip){
 
 void setup(){
   DEBUG_SERIAL.begin(USB_BAUD);
-  DEBUG_SERIAL.setTimeout(50);
+  DEBUG_SERIAL.setTimeout(150);
   // Do NOT block here; Python will open the port when ready.
   // while(!DEBUG_SERIAL) {}
 

@@ -157,6 +157,7 @@ try:
 
         q1,q2,q3 = out["qdeg"]
         ser.write((f"L {leg} {q1:.2f} {q2:.2f} {q3:.2f} {grip:.2f}\n").encode())
+        print((f"L {leg} {q1:.2f} {q2:.2f} {q3:.2f} {grip:.2f}\n"))
         pygame.time.wait(50)
 
 except KeyboardInterrupt:
