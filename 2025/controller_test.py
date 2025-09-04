@@ -5,13 +5,15 @@ pygame.init()
 pygame.joystick.init()
 
 # open serial connection to OpenRB-150
-ser = serial.Serial('/dev/ttyACM0', 57600, timeout=1)
+## ser = serial.Serial('/dev/ttyACM1', 57600, timeout=1)
 
+'''
 if not ser.is_open:
     print("failed to connect to OpenRB-150")
     sys.exit() 
 else:
     print("connection to OpenRB-150 established")
+'''
 
 if pygame.joystick.get_count() == 0:
     print("no joystick")
@@ -35,7 +37,7 @@ button_mapping = {
     9:"Left_Stick",
     10:"Right_Stick", 
 }
-  b           
+
 print("printing input")
 
 try:
@@ -47,33 +49,31 @@ try:
             if joystick.get_button(i):
                 name = button_mapping.get(i, f"Button_{i}")
                 print(f"Button Pressed {name}")
-                ser.write((f"BUTTON {name}\n").encode())
+                ## ser.write((f"BUTTON {name}\n").encode())
 
         # check for joystick movement
         for i in range(joystick.get_numaxes()):
             val = joystick.get_axis(i)
-            if (i == 2 or i == 5) and val >= -0.9:
+            if (i == 4 or i == 5) and val >= 0:
                 print(f"trigger {i} moved: {val:.2f}")
-                ser.write((f"TRIGGER {i} {val:.2f}\n").encode())
-            elif (i != 2 and i != 5) and abs(val) > 0.15:
+                ## ser.write((f"TRIGGER {i} {val:.2f}\n").encode())
+            elif (i != 4 and i != 5) and abs(val) > 0.15:
                 print(f"stick {i} moved: {val:.2f}")
-                ser.write((f"STICK {i} {val:.2f}\n").encode())
+                ## ser.write((f"STICK {i} {val:.2f}\n").encode())
 
-        # check for D-pad input
-        D_pad = joystick.get_hat(0)
-        if D_pad != (0, 0):
-            if D_pad[0] == -1:
-                print("D-padrLeft")
-                ser.write(b"D_PAD LEFT\n")
-            if D_pad[0] == 1:
-                print("D-pad Right")
-                ser.write(b"D_PAD RIGHT\n")
-            if D_pad[1] == -1:
-                print("D-pad Down")
-                ser.write(b"D_PAD DOWN\n")
-            if D_pad[1] == 1:
-                print("D-pad Up")
-                ser.write(b"D_PAD UP\n")
+        num_hats = joystick.get_numhats()
+        if num_hats > 0:
+            D_pad = joystick.get_hat(0)
+            if D_pad != (0, 0):
+                if D_pad[0] == -1:
+                    print("D-pad Left")
+                if D_pad[0] == 1:
+                    print("D-pad Right")
+                if D_pad[1] == -1:
+                    print("D-pad Down")
+                if D_pad[1] == 1:
+                    print("D-pad Up")
+
 
         pygame.time.wait(50)
 
@@ -81,7 +81,7 @@ try:
 except KeyboardInterrupt:
     print("\nstopping\n")
 
-finally:
-    if ser.is_open:
-        ser.close()    
-    pygame.quit()
+## finally:
+    ## if ser.is_open:
+        ## ser.close()    
+    ## pygame.quit()

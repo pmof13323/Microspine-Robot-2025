@@ -84,7 +84,7 @@ limAnkle = 20.0  # ± from vertical
 
 # ---------- initial pose ----------
 x, y, z = 159.0, 0.0, -207.5
-inc = 0.5
+inc = 4
 leg = 1
 grip = 0.0
 
@@ -130,15 +130,15 @@ try:
         trigL = trigR = False
         for i in range(js.get_numaxes()):
             val = js.get_axis(i)
-            if i in (2,5):  # triggers (adjust if your mapping differs)
-                if val >= -0.9:
-                    trigL = trigL or (i==2)
+            if i in (4,5):  # triggers (adjust if your mapping differs)
+                if val >= 0:
+                    trigL = trigL or (i==4)
                     trigR = trigR or (i==5)
                 continue
             if abs(val) > 0.3:
                 if i==0: y += val*inc   # LS X -> y
                 elif i==1: x += val*inc # LS Y -> x (invert if needed)
-                elif i==4: z += val*inc # RS Y -> z
+                elif i==3: z -= val*inc # RS Y -> z
 
         grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
 

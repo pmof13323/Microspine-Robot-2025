@@ -54,7 +54,7 @@ inline int32_t degToTickForId(uint8_t id,float user_deg){
 // Motion profiles (for joints)
 uint32_t PROFILE_VEL = 80, PROFILE_ACC = 20;
 // Grip velocity scaling (no limits)
-const int32_t GRIP_VEL_BASE = 80;
+const int32_t GRIP_VEL_BASE = 320;
 
 Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 
