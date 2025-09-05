@@ -11,7 +11,6 @@ SCALEFACTOR = 1 # universal scale factor
 
 adc = ADCPi(0x68, 0x69, 18)  # bit rate is 18MHz
 
-
 # V = Vcc * R_fixed / (R_fixed + R_fsr)
 def resistance_from_voltage(v):
     v = min(max(v, EPS), VCC - EPS)
@@ -20,19 +19,19 @@ def resistance_from_voltage(v):
 #to do : update equation
 def grip_force_from_voltage(v):
     
-    if v < 2.564: 
-        force = v/0.0153*9.81
+    if v < 3.77: 
+        force = (421.81*v)
     else: 
     # log relationship calculated in carriage testing
-        force = (math.exp((v+0.6733)/(0.6359))*9.81)
+        force = (8e-05)*(math.exp(4.4006*v))
 
     return force
 
 
 # R[kΩ] = 336.04 * F[g]^(-0.712)
-def force_g_from_resistance_ohm(r_ohm):
-    r_kohm = r_ohm / 1000.0
-    return SCALEFACTOR*(r_kohm / 336.04) ** (-1.0 / 0.712)
+# def force_g_from_resistance_ohm(r_ohm):
+#     r_kohm = r_ohm / 1000.0
+#     return SCALEFACTOR*(r_kohm / 336.04) ** (-1.0 / 0.712)
 
 
 def force_N_from_g(Fg):
