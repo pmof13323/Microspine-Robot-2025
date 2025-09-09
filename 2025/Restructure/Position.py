@@ -168,10 +168,10 @@ class PosGait:
 
     def step(self):
         # ----- leg select (X=1, Y=2, B=3, A=4) -----
-        if self.controller.is_pressed("X"): self.leg = 1
-        elif self.controller.is_pressed("Y"): self.leg = 2
-        elif self.controller.is_pressed("B"): self.leg = 3
-        elif self.controller.is_pressed("A"): self.leg = 4
+        if self.controller.is_pressed("X"): self.leg = 4
+        elif self.controller.is_pressed("Y"): self.leg = 1
+        elif self.controller.is_pressed("B"): self.leg = 2
+        elif self.controller.is_pressed("A"): self.leg = 3
 
         # restore this leg's last Pw if available so each leg remembers its own world target
         if self.last_valid[self.leg]["Pw"] is not None:
@@ -211,4 +211,6 @@ class PosGait:
 
         q1,q2,q3 = out["qdeg"]
         self.rb.send_leg_command(self.leg, q1, q2, q3, self.grip)
+        print(f"Positions: x={self.Pw[0]:.1f} y={self.Pw[1]:.1f} z={self.Pw[2]:.1f}")
         time.sleep(0.05)
+
