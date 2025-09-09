@@ -2,7 +2,7 @@ import numpy as np
 import time
 from TransmitData import OpenRB
 
-# --- helpers (pulled from your standalone script) ---
+# --- helpers ---
 def clamp(x, lo, hi): return np.minimum(np.maximum(x, lo), hi)
 
 def fk_ball_point(q1, q2, q3, o, L1, L2):
