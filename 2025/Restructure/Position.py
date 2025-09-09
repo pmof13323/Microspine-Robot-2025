@@ -100,8 +100,9 @@ class PosGait:
                                        self.limHipPitch, self.limKneePitch,
                                        samples=181, tol_mm=5.0, prefer="down")
         if seed["tibia_ok"] and seed["feasible"]:
-            self.last_valid[1]["sol"] = seed
-            self.last_valid[1]["xyz"] = (self.x,self.y,self.z)
+            for i in range(1, 5):
+                self.last_valid[i]["sol"] = seed
+                self.last_valid[i]["xyz"] = (self.x,self.y,self.z)
 
     def step(self):
         # Check button presses (leg select)
