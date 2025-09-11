@@ -14,35 +14,36 @@ class Controller:
         self.joystick.init()
         print("Joystick detected")
 
-        self.button_mapping = {
-            0:"A",
-            1:"B",
-            2:"X",
-            3:"Y",
-            4:"Back",
-            5:"Xbox",
-            6:"Start",
-            7:"Left_Stick",
-            8:"Right_Stick",    
-            9:"Left_bumper",
-            10:"Right_bumper", 
-        }
-
-        '''
-        self.button_mapping = {
-            0:"A",
-            1:"B",
-            2:"X",
-            3:"Y",
-            4:"Left_bumper",
-            5:"Right_bumper",
-            6:"Back",
-            7:"Start",
-            8:"Xbox",    
-            9:"Left_Stick",
-            10:"Right_Stick", 
-        }
-        '''
+        if sys.platform.startswith("win"):
+            self.button_mapping = {
+                0:"A",
+                1:"B",
+                2:"X",
+                3:"Y",
+                4:"Left_bumper",
+                5:"Right_bumper",
+                6:"Back",
+                7:"Start",
+                8:"Xbox",    
+                9:"Left_Stick",
+                10:"Right_Stick", 
+            }
+            # elif sys.platform.startswith("linux"):
+                
+        elif sys.platform.startswith("darwin"):  # macOS
+            self.button_mapping = {
+                0:"A",
+                1:"B",
+                2:"X",
+                3:"Y",
+                4:"Back",
+                5:"Xbox",
+                6:"Start",
+                7:"Left_Stick",
+                8:"Right_Stick",    
+                9:"Left_bumper",
+                10:"Right_bumper", 
+            }
 
         # store current button states
         self.buttons = {name: False for name in self.button_mapping.values()}
