@@ -134,9 +134,15 @@ class PosGait:
         self.limAnkle = 20.0   # tibia tilt dev vs vertical (deg)
 
         # input / selection
-        self.inc = 4.0
+        self.inc = 4.0          # motion increment per tick
+        self.dead = 0.30        # joystick deadzone
         self.leg = 1
         self.grip = 0.0
+
+        # mode: 'leg' edits a single foot contact Pw; 'body' moves the body while feet are fixed
+        self.mode = 'leg'
+        self.body_T = np.zeros(3)  # body translation [X,Y,Z] in world
+        self.body_anchors = {i: None for i in (1,2,3,4)}  # fixed world foot points during body mode
 
         # ----- per-leg last valid, stored in WORLD coordinates -----
         self.last_valid = {i: {"sol":None, "Pw":None} for i in (1,2,3,4)}
@@ -146,71 +152,153 @@ class PosGait:
         for i in (1,2,3,4):
             psi = leg_base_yaw_rad(i)
             HYw = hip_yaw_world(i, self.radius_hp, self.o_local)
-            # Bring leg-1 local point into the current leg's local frame (same numbers),
-            # then map to world by: Pw = HYw + Rz(psi) * p_local
             Pw = HYw + (Rz(psi) @ seed_local_leg1)
             # Solve IK once to confirm feasibility and cache it
             p_leg = world_to_leg_yaw_frame(Pw, i, self.radius_hp, self.o_local)
             sol = leg_ik_with_foot_target(
                 p_leg, self.o_local, self.femur, self.tibia, self.foot,
                 self.limAnkle, self.limHipYaw, self.limHipPitch, self.limKneePitch,
-                samples=181, tol_mm=5.0, prefer="down"
+                samples=30, tol_mm=5.0, prefer="down"
             )
             if sol["tibia_ok"] and sol["feasible"]:
                 self.last_valid[i]["sol"] = sol
                 self.last_valid[i]["Pw"]  = Pw
 
-        # current editable global target (start from leg 1's last valid or a default)
+        # current editable global target for the *selected* leg
         if self.last_valid[1]["Pw"] is not None:
             self.Pw = self.last_valid[1]["Pw"].copy()
         else:
             self.Pw = np.array([ self.radius_hp + 150.0, 0.0, -200.0 ], float)
 
-    def step(self):
-        # ----- leg select (X=1, Y=2, B=3, A=4) -----
-        if self.controller.is_pressed("X"): self.leg = 4
-        elif self.controller.is_pressed("Y"): self.leg = 1
-        elif self.controller.is_pressed("B"): self.leg = 2
-        elif self.controller.is_pressed("A"): self.leg = 3
-
-        # restore this leg's last Pw if available so each leg remembers its own world target
-        if self.last_valid[self.leg]["Pw"] is not None:
-            self.Pw = self.last_valid[self.leg]["Pw"].copy()
-
-        # ----- joystick axes -> GLOBAL X,Y,Z editing -----
-        trigL = trigR = False
-        for i in range(self.controller.joystick.get_numaxes()):
-            val = self.controller.joystick.get_axis(i)
-            if i in (4,5):  # triggers
-                if val >= 0:
-                    trigL = trigL or (i==4)
-                    trigR = trigR or (i==5)
-                continue
-            if abs(val) > 0.3:
-                if i==0: self.Pw[1] -= val*self.inc   # left stick X -> world Y
-                elif i==1: self.Pw[0] -= val*self.inc # left stick Y -> world X
-                elif i==3: self.Pw[2] -= val*self.inc # right stick Y -> world Z (up is negative)
-        self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
-
-        # ----- world -> leg yaw frame, solve IK, send command -----
-        p_leg = world_to_leg_yaw_frame(self.Pw, self.leg, self.radius_hp, self.o_local)
+    # ------------ helpers ------------
+    def _solve_leg_for_world_target(self, leg:int, Pw_world:np.ndarray):
+        """Return (sol, feasible_bool) for a given leg and world foot contact Pw_world."""
+        p_leg = world_to_leg_yaw_frame(Pw_world, leg, self.radius_hp, self.o_local)
         sol = leg_ik_with_foot_target(
             p_leg, self.o_local, self.femur, self.tibia, self.foot,
             self.limAnkle, self.limHipYaw, self.limHipPitch, self.limKneePitch,
-            samples=181, tol_mm=5.0, prefer="down"
+            samples=30, tol_mm=5.0, prefer="down"
         )
+        feasible = bool(sol["tibia_ok"] and sol["feasible"])
+        return sol, feasible
 
-        if sol["tibia_ok"] and sol["feasible"]:
-            out = sol
-            self.last_valid[self.leg]["sol"] = sol
-            self.last_valid[self.leg]["Pw"]  = self.Pw.copy()
-        else:
-            out = self.last_valid[self.leg]["sol"] if self.last_valid[self.leg]["sol"] else sol
+    def _capture_body_anchors(self):
+        """Freeze current feet world positions to act as fixed anchors for body mode."""
+        for i in (1,2,3,4):
+            if self.last_valid[i]["Pw"] is not None:
+                self.body_anchors[i] = self.last_valid[i]["Pw"].copy()
+            else:
+                psi = leg_base_yaw_rad(i)
+                HYw = hip_yaw_world(i, self.radius_hp, self.o_local)
+                self.body_anchors[i] = HYw + (Rz(psi) @ np.array([159.0, 0.0, -207.5]))
+        # zero body translation when entering body mode
+        self.body_T[:] = 0.0
+
+    def _read_axes_xy_z(self):
+        """Read sticks as (dx, dy, dz) increments in WORLD frame based on self.inc & deadzone."""
+        dx = dy = dz = 0.0
+        js = self.controller.joystick
+        # Left stick X (axis 0) -> +Y; Left stick Y (axis 1) -> +X
+        ax0 = js.get_axis(0) if js.get_numaxes() > 0 else 0.0
+        ax1 = js.get_axis(1) if js.get_numaxes() > 1 else 0.0
+        ax3 = js.get_axis(3) if js.get_numaxes() > 3 else 0.0  # right stick Y -> Z
+        if abs(ax0) > self.dead: dy -= ax0 * self.inc  # matches your existing sign convention
+        if abs(ax1) > self.dead: dx -= ax1 * self.inc
+        if abs(ax3) > self.dead: dz -= ax3 * self.inc
+        return np.array([dx, dy, dz], float)
+
+    # ------------ main loop ------------
+    def step(self):
+        # ----- select mode with bumpers -----
+        if self.controller.is_pressed("Right_bumper"):
+            if self.mode != 'body':
+                self.mode = 'body'
+                self._capture_body_anchors()
+                print("👉 Body movement mode (feet anchored)")
+        elif self.controller.is_pressed("Left_bumper"):
+            if self.mode != 'leg':
+                self.mode = 'leg'
+                print("👉 Leg movement mode (edit one foot)")
+
+        # ----- select leg (only matters in leg mode) -----
+        if self.mode == 'leg':
+            if self.controller.is_pressed("X"): self.leg = 4
+            elif self.controller.is_pressed("Y"): self.leg = 1
+            elif self.controller.is_pressed("B"): self.leg = 2
+            elif self.controller.is_pressed("A"): self.leg = 3
+
             if self.last_valid[self.leg]["Pw"] is not None:
                 self.Pw = self.last_valid[self.leg]["Pw"].copy()
 
-        q1,q2,q3 = out["qdeg"]
-        self.rb.send_leg_command(self.leg, q1, q2, q3, self.grip)
-        print(f"Positions: x={self.Pw[0]:.1f} y={self.Pw[1]:.1f} z={self.Pw[2]:.1f}")
-        time.sleep(0.05)
+            # ----- joystick axes -> GLOBAL X,Y,Z editing of the *foot* -----
+            trigL = trigR = False
+            js = self.controller.joystick
+            for i in range(js.get_numaxes()):
+                val = js.get_axis(i)
+                if i in (4,5):  # triggers
+                    if val >= 0:
+                        trigL = trigL or (i==4)
+                        trigR = trigR or (i==5)
+                    continue
+                if abs(val) > self.dead:
+                    if i==0: self.Pw[1] -= val*self.inc   # left stick X -> world Y
+                    elif i==1: self.Pw[0] -= val*self.inc # left stick Y -> world X
+                    elif i==3: self.Pw[2] -= val*self.inc # right stick Y -> world Z (up is negative)
+            self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
 
+            # ----- solve IK for this one leg and send -----
+            sol, feasible = self._solve_leg_for_world_target(self.leg, self.Pw)
+            if feasible:
+                out = sol
+                self.last_valid[self.leg]["sol"] = sol
+                self.last_valid[self.leg]["Pw"]  = self.Pw.copy()
+            else:
+                out = self.last_valid[self.leg]["sol"] if self.last_valid[self.leg]["sol"] else sol
+                if self.last_valid[self.leg]["Pw"] is not None:
+                    self.Pw = self.last_valid[self.leg]["Pw"].copy()
+
+            q1,q2,q3 = out["qdeg"]
+            self.rb.send_leg_command(self.leg, q1, q2, q3, self.grip)
+            print(f"[LEG] leg={self.leg} Pw=({self.Pw[0]:.1f},{self.Pw[1]:.1f},{self.Pw[2]:.1f})")
+            time.sleep(0.05)
+            return
+
+        # ----- BODY MODE: move the body while feet stay fixed at body_anchors -----
+        dT = self._read_axes_xy_z()  # proposed small translation
+        if np.linalg.norm(dT) > 0.0:
+            T_candidate = self.body_T + dT
+
+            # Check feasibility for all 4 legs with candidate body translation
+            all_ok = True
+            sols = {}
+            for i in (1,2,3,4):
+                Pw_eff = self.body_anchors[i] - T_candidate  # feet fixed, body moves => relative foot goes opposite
+                sol, ok = self._solve_leg_for_world_target(i, Pw_eff)
+                sols[i] = (sol, ok, Pw_eff)
+                if not ok:
+                    all_ok = False
+                    break
+
+            if all_ok:
+                self.body_T = T_candidate  # accept move
+                # update last_valid and send all legs
+                for i in (1,2,3,4):
+                    sol, ok, Pw_eff = sols[i]
+                    self.last_valid[i]["sol"] = sol
+                    self.last_valid[i]["Pw"]  = self.body_anchors[i].copy()  # anchors are the world feet
+                    q1,q2,q3 = sol["qdeg"]
+                    self.rb.send_leg_command(i, q1, q2, q3, 0.0)
+            else:
+                # reject this incremental move; optionally beep/log
+                pass
+        else:
+            # No stick input: still hold posture by re-sending last_valid
+            for i in (1,2,3,4):
+                sol = self.last_valid[i]["sol"]
+                if sol is None:
+                    continue
+                q1,q2,q3 = sol["qdeg"]
+                self.rb.send_leg_command(i, q1, q2, q3, 0.0)
+
+        print(f"[BODY] T=({self.body_T[0]:.1f},{self.body_T[1]:.1f},{self.body_T[2]:.1f})  anchors: set")
+        # time.sleep(0.05)

@@ -9,7 +9,7 @@ class OpenRB:
             elif sys.platform.startswith("linux"):
                 port = "/dev/ttyUSB0"
             elif sys.platform.startswith("darwin"):  # macOS
-                port = "/dev/tty.usbmodem2101"
+                port = "/dev/tty.usbmodem1101"
 
         self.ser = serial.Serial(port, baud, timeout=0.1)
         time.sleep(2.0)  # let board enumerate
