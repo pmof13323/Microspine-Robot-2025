@@ -291,6 +291,7 @@ int DXLInterface::writeDXLData() {
         if (dxl.syncWrite(&SyncWrite_info) == true) {
             if (DEBUG) {
                 Serial.println("[SyncWrite] Success");
+                Serial.println(SyncWrite_info.xel_count);
             }
             for (int i = 0; i < SyncWrite_info.xel_count; i++) {
                 if (DEBUG) {

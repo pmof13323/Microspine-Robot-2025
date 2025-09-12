@@ -73,12 +73,14 @@ void driveGrip(uint8_t leg, float grip){
 void setup(){
     DEBUG_SERIAL.begin(USB_BAUD);
     dxlInterface.init();
-    dxlInterface.configureDXLBuffers();
 
     // Init all DXLs
     for(uint8_t id=1; id<=16; ++id){
         dxlInterface.registerDXL(id);
     }
+
+    dxlInterface.configureDXLBuffers();
+
     dxlInterface.initDXLs();
 
     for (uint8_t id = 1; id <= 12; ++id) {
