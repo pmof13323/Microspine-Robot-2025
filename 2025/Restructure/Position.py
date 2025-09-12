@@ -118,8 +118,7 @@ def world_to_leg_yaw_frame(Pw:np.ndarray, leg:int, radius:float, o_local:np.ndar
 
 
 
-def deg_to_dxl(angle_deg, min_deg=-150.0, max_deg=150.0, resolution=4095):
-    # Maps -150°..+150° to 0..4095 for MX-28 type motors
+def deg_to_dxl(angle_deg, min_deg=-180.0, max_deg=180.0, resolution=4095):
     return int(np.clip((angle_deg - min_deg) / (max_deg - min_deg) * resolution, 0, resolution))
 
 class PosGait:
@@ -246,6 +245,7 @@ class PosGait:
                     self.Pw = self.last_valid[self.leg]["Pw"].copy()
 
             q1, q2, q3 = sol["qdeg"]
+            q3 = -q3
             # Example mapping: each leg has 3 servos, assign IDs in order
             base_id = (self.leg - 1) * 3
             sync_targets.extend([
@@ -274,6 +274,7 @@ class PosGait:
                         self.last_valid[i]["sol"] = sol
                         self.last_valid[i]["Pw"]  = self.body_anchors[i].copy()
                         q1,q2,q3 = sol["qdeg"]
+                        q3 = -q3
                         base_id = (i - 1) * 3
                         sync_targets.extend([
                             (base_id+1, deg_to_dxl(q1)),
@@ -286,6 +287,7 @@ class PosGait:
                     if sol is None:
                         continue
                     q1,q2,q3 = sol["qdeg"]
+                    q3 = -q3
                     base_id = (i - 1) * 3
                     sync_targets.extend([
                         (base_id+1, deg_to_dxl(q1)),
