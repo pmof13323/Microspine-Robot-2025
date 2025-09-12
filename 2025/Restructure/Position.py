@@ -117,6 +117,11 @@ def world_to_leg_yaw_frame(Pw:np.ndarray, leg:int, radius:float, o_local:np.ndar
     return Rz(-psi) @ (Pw - HYw)
 
 
+
+def deg_to_dxl(angle_deg, min_deg=-150.0, max_deg=150.0, resolution=4095):
+    # Maps -150°..+150° to 0..4095 for MX-28 type motors
+    return int(np.clip((angle_deg - min_deg) / (max_deg - min_deg) * resolution, 0, resolution))
+
 class PosGait:
     def __init__(self, controller):
         self.name = "Positioning (Global frame)"
@@ -125,35 +130,26 @@ class PosGait:
 
         # ----- geometry -----
         self.coxa, self.femur, self.tibia, self.foot = 52.0, 107.0, 107.5, 100.0
-        # o is still defined in each LEG'S LOCAL frame (yaw->pitch)
         self.o_local = np.array([self.coxa, 0.0, 0.0])
-        self.radius_hp = 85.0  # hip-pitch circle radius (mm)
+        self.radius_hp = 85.0
 
-        # joint limits (deg)
         self.limHipYaw, self.limHipPitch, self.limKneePitch = (-90,90), (-120,120), (-120,120)
-        self.limAnkle = 20.0   # tibia tilt dev vs vertical (deg)
+        self.limAnkle = 20.0
 
-        # input / selection
-        self.inc = 4.0          # motion increment per tick
-        self.dead = 0.30        # joystick deadzone
+        self.inc = 4.0
+        self.dead = 0.30
         self.leg = 1
         self.grip = 0.0
-
-        # mode: 'leg' edits a single foot contact Pw; 'body' moves the body while feet are fixed
         self.mode = 'leg'
-        self.body_T = np.zeros(3)  # body translation [X,Y,Z] in world
-        self.body_anchors = {i: None for i in (1,2,3,4)}  # fixed world foot points during body mode
-
-        # ----- per-leg last valid, stored in WORLD coordinates -----
+        self.body_T = np.zeros(3)
+        self.body_anchors = {i: None for i in (1,2,3,4)}
         self.last_valid = {i: {"sol":None, "Pw":None} for i in (1,2,3,4)}
 
-        # ----- seed: take your original leg-1 local target and rotate to world for each leg -----
-        seed_local_leg1 = np.array([159.0, 0.0, -207.5])  # this was in leg-1 yaw frame
+        seed_local_leg1 = np.array([159.0, 0.0, -207.5])
         for i in (1,2,3,4):
             psi = leg_base_yaw_rad(i)
             HYw = hip_yaw_world(i, self.radius_hp, self.o_local)
             Pw = HYw + (Rz(psi) @ seed_local_leg1)
-            # Solve IK once to confirm feasibility and cache it
             p_leg = world_to_leg_yaw_frame(Pw, i, self.radius_hp, self.o_local)
             sol = leg_ik_with_foot_target(
                 p_leg, self.o_local, self.femur, self.tibia, self.foot,
@@ -164,13 +160,8 @@ class PosGait:
                 self.last_valid[i]["sol"] = sol
                 self.last_valid[i]["Pw"]  = Pw
 
-        # current editable global target for the *selected* leg
-        if self.last_valid[1]["Pw"] is not None:
-            self.Pw = self.last_valid[1]["Pw"].copy()
-        else:
-            self.Pw = np.array([ self.radius_hp + 150.0, 0.0, -200.0 ], float)
+        self.Pw = self.last_valid[1]["Pw"].copy() if self.last_valid[1]["Pw"] is not None else np.array([self.radius_hp+150.0,0.0,-200.0],float)
 
-    # ------------ helpers ------------
     def _solve_leg_for_world_target(self, leg:int, Pw_world:np.ndarray):
         """Return (sol, feasible_bool) for a given leg and world foot contact Pw_world."""
         p_leg = world_to_leg_yaw_frame(Pw_world, leg, self.radius_hp, self.o_local)
@@ -207,9 +198,9 @@ class PosGait:
         if abs(ax3) > self.dead: dz -= ax3 * self.inc
         return np.array([dx, dy, dz], float)
 
-    # ------------ main loop ------------
     def step(self):
-        # ----- select mode with bumpers -----
+        sync_targets = []  # accumulate (id, pos) pairs here
+
         if self.controller.is_pressed("Right_bumper"):
             if self.mode != 'body':
                 self.mode = 'body'
@@ -220,8 +211,8 @@ class PosGait:
                 self.mode = 'leg'
                 print("👉 Leg movement mode (edit one foot)")
 
-        # ----- select leg (only matters in leg mode) -----
         if self.mode == 'leg':
+            # select leg
             if self.controller.is_pressed("X"): self.leg = 4
             elif self.controller.is_pressed("Y"): self.leg = 1
             elif self.controller.is_pressed("B"): self.leg = 2
@@ -230,75 +221,79 @@ class PosGait:
             if self.last_valid[self.leg]["Pw"] is not None:
                 self.Pw = self.last_valid[self.leg]["Pw"].copy()
 
-            # ----- joystick axes -> GLOBAL X,Y,Z editing of the *foot* -----
-            trigL = trigR = False
             js = self.controller.joystick
+            trigL = trigR = False
             for i in range(js.get_numaxes()):
                 val = js.get_axis(i)
-                if i in (4,5):  # triggers
+                if i in (4,5):
                     if val >= 0:
                         trigL = trigL or (i==4)
                         trigR = trigR or (i==5)
                     continue
                 if abs(val) > self.dead:
-                    if i==0: self.Pw[1] -= val*self.inc   # left stick X -> world Y
-                    elif i==1: self.Pw[0] -= val*self.inc # left stick Y -> world X
-                    elif i==3: self.Pw[2] -= val*self.inc # right stick Y -> world Z (up is negative)
+                    if i==0: self.Pw[1] -= val*self.inc
+                    elif i==1: self.Pw[0] -= val*self.inc
+                    elif i==3: self.Pw[2] -= val*self.inc
             self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
 
-            # ----- solve IK for this one leg and send -----
             sol, feasible = self._solve_leg_for_world_target(self.leg, self.Pw)
             if feasible:
-                out = sol
                 self.last_valid[self.leg]["sol"] = sol
                 self.last_valid[self.leg]["Pw"]  = self.Pw.copy()
             else:
-                out = self.last_valid[self.leg]["sol"] if self.last_valid[self.leg]["sol"] else sol
+                sol = self.last_valid[self.leg]["sol"] if self.last_valid[self.leg]["sol"] else sol
                 if self.last_valid[self.leg]["Pw"] is not None:
                     self.Pw = self.last_valid[self.leg]["Pw"].copy()
 
-            q1,q2,q3 = out["qdeg"]
-            self.rb.send_leg_command(self.leg, q1, q2, q3, self.grip)
-            print(f"[LEG] leg={self.leg} Pw=({self.Pw[0]:.1f},{self.Pw[1]:.1f},{self.Pw[2]:.1f})")
-            time.sleep(0.05)
-            return
+            q1, q2, q3 = sol["qdeg"]
+            # Example mapping: each leg has 3 servos, assign IDs in order
+            base_id = (self.leg - 1) * 3
+            sync_targets.extend([
+                (base_id+1, deg_to_dxl(q1)),
+                (base_id+2, deg_to_dxl(q2)),
+                (base_id+3, deg_to_dxl(q3)),
+            ])
 
-        # ----- BODY MODE: move the body while feet stay fixed at body_anchors -----
-        dT = self._read_axes_xy_z()  # proposed small translation
-        if np.linalg.norm(dT) > 0.0:
-            T_candidate = self.body_T + dT
-
-            # Check feasibility for all 4 legs with candidate body translation
-            all_ok = True
-            sols = {}
-            for i in (1,2,3,4):
-                Pw_eff = self.body_anchors[i] - T_candidate  # feet fixed, body moves => relative foot goes opposite
-                sol, ok = self._solve_leg_for_world_target(i, Pw_eff)
-                sols[i] = (sol, ok, Pw_eff)
-                if not ok:
-                    all_ok = False
-                    break
-
-            if all_ok:
-                self.body_T = T_candidate  # accept move
-                # update last_valid and send all legs
+        else:  # BODY MODE
+            dT = self._read_axes_xy_z()
+            if np.linalg.norm(dT) > 0.0:
+                T_candidate = self.body_T + dT
+                all_ok = True
+                sols = {}
                 for i in (1,2,3,4):
-                    sol, ok, Pw_eff = sols[i]
-                    self.last_valid[i]["sol"] = sol
-                    self.last_valid[i]["Pw"]  = self.body_anchors[i].copy()  # anchors are the world feet
-                    q1,q2,q3 = sol["qdeg"]
-                    self.rb.send_leg_command(i, q1, q2, q3, 0.0)
+                    Pw_eff = self.body_anchors[i] - T_candidate
+                    sol, ok = self._solve_leg_for_world_target(i, Pw_eff)
+                    sols[i] = (sol, ok, Pw_eff)
+                    if not ok:
+                        all_ok = False
+                        break
+                if all_ok:
+                    self.body_T = T_candidate
+                    for i in (1,2,3,4):
+                        sol, _, _ = sols[i]
+                        self.last_valid[i]["sol"] = sol
+                        self.last_valid[i]["Pw"]  = self.body_anchors[i].copy()
+                        q1,q2,q3 = sol["qdeg"]
+                        base_id = (i - 1) * 3
+                        sync_targets.extend([
+                            (base_id+1, deg_to_dxl(q1)),
+                            (base_id+2, deg_to_dxl(q2)),
+                            (base_id+3, deg_to_dxl(q3)),
+                        ])
             else:
-                # reject this incremental move; optionally beep/log
-                pass
-        else:
-            # No stick input: still hold posture by re-sending last_valid
-            for i in (1,2,3,4):
-                sol = self.last_valid[i]["sol"]
-                if sol is None:
-                    continue
-                q1,q2,q3 = sol["qdeg"]
-                self.rb.send_leg_command(i, q1, q2, q3, 0.0)
+                for i in (1,2,3,4):
+                    sol = self.last_valid[i]["sol"]
+                    if sol is None:
+                        continue
+                    q1,q2,q3 = sol["qdeg"]
+                    base_id = (i - 1) * 3
+                    sync_targets.extend([
+                        (base_id+1, deg_to_dxl(q1)),
+                        (base_id+2, deg_to_dxl(q2)),
+                        (base_id+3, deg_to_dxl(q3)),
+                    ])
 
-        print(f"[BODY] T=({self.body_T[0]:.1f},{self.body_T[1]:.1f},{self.body_T[2]:.1f})  anchors: set")
-        # time.sleep(0.05)
+        # 🔑 Send everything in one go
+        if sync_targets:
+            self.rb.send_sync_positions(sync_targets)
+            time.sleep(0.02)  # reduce serial spam but keep fast loop

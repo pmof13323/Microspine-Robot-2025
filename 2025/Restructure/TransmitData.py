@@ -5,7 +5,7 @@ class OpenRB:
         # Default port per OS
         if port is None:
             if sys.platform.startswith("win"):
-                port = "COM3"
+                port = "COM4"
             elif sys.platform.startswith("linux"):
                 port = "/dev/ttyUSB0"
             elif sys.platform.startswith("darwin"):  # macOS
@@ -15,12 +15,20 @@ class OpenRB:
         time.sleep(2.0)  # let board enumerate
         print(f"[OpenRB] Connected on {port} at {baud} baud")
 
-    def send_leg_command(self, leg, q1, q2, q3, grip):
-        """Send one line to OpenRB over serial."""
-        line = f"L {leg} {q1:.2f} {q2:.2f} {q3:.2f} {grip:.2f}\n"
+    def send_sync_positions(self, id_pos_pairs):
+        """
+        Send all servo positions at once.
+        id_pos_pairs: list of (id, position) tuples
+        Example: [(1, 512), (2, 256), (3, 900)]
+        """
+        parts = []
+        for dxl_id, pos in id_pos_pairs:
+            parts.append(f"{dxl_id} {pos}")
+        line = "SYNC " + " ".join(parts) + "\n"
         self.ser.write(line.encode())
-        print(line.strip())
+        print("[SYNC SEND]", line.strip())
 
     def close(self):
         if self.ser and self.ser.is_open:
             self.ser.close()
+            print("[OpenRB] Serial closed")
