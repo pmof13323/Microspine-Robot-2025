@@ -81,13 +81,7 @@ void setup(){
     }
     dxlInterface.initDXLs();
 
-    // Enable torque on all leg motors (IDs 1..12)
     for (uint8_t id = 1; id <= 12; ++id) {
-        dxlInterface.enableDXLTorque(id);
-    }
-
-    for (uint8_t id = 1; id <= 12; ++id) {
-        dxlInterface.enableDXLTorque(id);
         dxlInterface.setDXLControlMode(id, OP_POSITION);
     }
 
