@@ -7,7 +7,8 @@ import Controller
 
 if __name__ == "__main__":
     controller = Controller.Controller()
-    gaits = [PosGait(controller), AngleGait(), WalkGait()]
+    openrb= OpenRB()
+    gaits = [inital(openrb),PosGait(controller,openrb), AngleGait(), WalkGait()]
     selector = ModeSelector.ModeSelector(gaits)
 
     # Map D-pad directions to gait indices

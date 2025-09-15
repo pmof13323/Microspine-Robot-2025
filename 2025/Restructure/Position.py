@@ -122,10 +122,10 @@ def deg_to_dxl(angle_deg, min_deg=-180.0, max_deg=180.0, resolution=4095):
     return int(np.clip((angle_deg - min_deg) / (max_deg - min_deg) * resolution, 0, resolution))
 
 class PosGait:
-    def __init__(self, controller):
+    def __init__(self, controller,OpenRB):
         self.name = "Positioning (Global frame)"
         self.controller = controller
-        self.rb = OpenRB()  # serial comms
+        self.rb = OpenRB  # serial comms
 
         # ----- geometry -----
         self.coxa, self.femur, self.tibia, self.foot = 52.0, 107.0, 107.5, 100.0
