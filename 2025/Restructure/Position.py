@@ -139,7 +139,7 @@ class PosGait:
         self.dead = 0.30
         self.leg = 1
         self.grip = 0.0
-        self.mode = 'body'
+        self.mode = 'leg'
         self.body_T = np.zeros(3)
         self.body_anchors = {i: None for i in (1,2,3,4)}
         self.last_valid = {i: {"sol":None, "Pw":None} for i in (1,2,3,4)}
