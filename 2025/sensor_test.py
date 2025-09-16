@@ -10,6 +10,7 @@ EPS = 1e-6  # avoid division by zero
 SCALEFACTOR = 1 # universal scale factor
 
 adc = ADCPi(0x68, 0x69, 18)  # bit rate is 18MHz
+adc2 = ADCPi(0x6C, 0x6D, 18)  # bit rate is 18MHz
 
 # V = Vcc * R_fixed / (R_fixed + R_fsr)
 def resistance_from_voltage(v):
