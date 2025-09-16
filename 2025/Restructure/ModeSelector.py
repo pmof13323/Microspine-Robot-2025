@@ -6,7 +6,7 @@ class ModeSelector:
         # Map buttons to gait indices
         # Example: numpad up = 0, left = 1, right = 2
         self.button_map = {
-            "init": 0,
+            "start": 0,
             "up": 1,
             "left": 2,
             "right": 3

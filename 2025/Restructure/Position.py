@@ -300,6 +300,7 @@ class PosGait:
         # 🔑 Send everything in one go
         if sync_targets:
             print(f"\n")
+            print(f" Positional Control Mode")
             print(f"+-------------------------------------+-----------------+")
             print(f" Controlling Leg Number {self.leg}             | Grip Mode: {self.grip:.2f}")
             print(f"+----------+--------------------------+-----------------+")

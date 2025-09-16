@@ -87,6 +87,8 @@ class Controller:
                 return "up"
             if self.is_pressed("Dpad Down"):
                 return "down"
+            if self.is_pressed("Start"):
+                return "start"
             return None
         else:
             # Default (Windows/Linux) using self.dpad
@@ -101,3 +103,5 @@ class Controller:
                 return "up"
             if y == -1:
                 return "down"
+            if self.is_pressed("Start"):
+                return "start"
