@@ -367,6 +367,13 @@ int DXLInterface::writeDXLData() {
                     Serial.print(SyncWriteVel_info.p_xels[i].id);
                     Serial.print("\t Goal Velocity: ");
                     Serial.println(SyncWriteVel_data[i].goal_velocity);
+                    Serial.print("\t Goal Operation Mode: ");
+                    Serial.print(dxl.readControlTableItem(OPERATION_MODE, SyncWriteVel_info.p_xels[i].id));
+                    Serial.print("\t ENABLE: ");
+                    Serial.print(dxl.readControlTableItem(34, SyncWriteVel_info.p_xels[i].id));
+                    Serial.print("\t Read Velocity: ");
+                    Serial.print(dxl.readControlTableItem(59, SyncWriteVel_info.p_xels[i].id));
+                    Serial.print('\n');
                 }
             }
         } else {
@@ -381,3 +388,13 @@ int DXLInterface::writeDXLData() {
 
 
 int DXLInterface::updateDXLData() {}
+
+
+// Function to print operating mode of a single motor
+void DXLInterface::printMotorOpMode(uint8_t motorID) {
+    int8_t mode = dxl.readControlTableItem(OPERATION_MODE, motorID);
+    Serial.print("Motor ID ");
+    Serial.print(motorID);
+    Serial.print(" Operating Mode: ");
+    Serial.println((mode));
+}

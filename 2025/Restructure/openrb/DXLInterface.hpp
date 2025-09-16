@@ -5,6 +5,8 @@
 
 #include "config.h"
 
+#define OPERATION_MODE 9
+
 const uint16_t BUF_SIZE = 256;
 
 
@@ -65,13 +67,13 @@ class DXLInterface {
     DYNAMIXEL::InfoSyncReadInst_t SyncRead_info;
     DYNAMIXEL::XELInfoSyncRead_t SyncRead_data_info[NUM_DXLs];
 
-    SyncWritePosition_t SyncWritePos_data[NUM_DXLs];
-    DYNAMIXEL::InfoSyncWriteInst_t SyncWritePos_info;
-    DYNAMIXEL::XELInfoSyncWrite_t SyncWritePos_data_info[NUM_DXLs];
-
     SyncWriteVelocity_t SyncWriteVel_data[NUM_DXLs];
     DYNAMIXEL::InfoSyncWriteInst_t SyncWriteVel_info;
     DYNAMIXEL::XELInfoSyncWrite_t SyncWriteVel_data_info[NUM_DXLs];
+
+    SyncWritePosition_t SyncWritePos_data[NUM_DXLs];
+    DYNAMIXEL::InfoSyncWriteInst_t SyncWritePos_info;
+    DYNAMIXEL::XELInfoSyncWrite_t SyncWritePos_data_info[NUM_DXLs];
 
     uint8_t user_pkt_buf[BUF_SIZE];
 
@@ -112,7 +114,12 @@ public:
     int readDXLData();
     int writeDXLData();
 
+    const char* opModeName(int8_t mode);
+    void printMotorOpMode(uint8_t motorID);
+
     int updateDXLData();
 };
+
+
 
 #endif // !DXLINTERFACE_H

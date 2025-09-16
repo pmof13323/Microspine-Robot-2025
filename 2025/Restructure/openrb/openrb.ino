@@ -12,11 +12,10 @@
 using namespace ControlTableItem;
 
 // USB to host
-const uint32_t USB_BAUD = 115200;
+const uint32_t USB_BAUD = 57600;
 
 // Dynamixel bus
 const float DXL_PROTOCOL_VERSION = 2.0;
-const uint32_t DXL_BAUD = 57600;
 
 // Motion profiles
 uint32_t PROFILE_VEL = 80, PROFILE_ACC = 20;
@@ -70,6 +69,7 @@ void driveGrip(uint8_t leg, float grip){
     dxlInterface.setVelocity_im(gripIdFor(leg), vel);
 }
 
+
 void setup(){
     DEBUG_SERIAL.begin(USB_BAUD);
     dxlInterface.init();
@@ -92,9 +92,15 @@ void setup(){
     }
 
     DEBUG_SERIAL.println(F("Ready"));
+    
 }
 
 void loop(){
+
+    /*for (int i=1; i<=16; i++){
+        dxlInterface.printMotorOpMode(i);
+    }*/
+
     if(!DEBUG_SERIAL.available()) return;
 
     String line = readLine();
@@ -104,7 +110,7 @@ void loop(){
     if(bar >= 0) line = line.substring(0, bar);
     line.trim();
 
-    String tok[32];  // large enough for SYNC 16 motors
+    String tok[128];  // large enough for SYNC 16 motors
     int n = tokenize(line, tok, 32);
     if(n < 2) return;
 
