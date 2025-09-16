@@ -76,26 +76,28 @@ class Controller:
         return self.buttons.get(name, False)
 
     def dpad_direction(self):
-        """Return string of D-pad direction"""
-        x, y = self.dpad
-        if (x, y) == (0, 0):
+        """Return string of D-pad direction based on OS."""
+        if sys.platform.startswith("darwin"):  # macOS
+            # Mac version using self.is_pressed
+            if self.is_pressed("Dpad Left"):
+                return "left"
+            if self.is_pressed("Dpad Right"):
+                return "right"
+            if self.is_pressed("Dpad Up"):
+                return "up"
+            if self.is_pressed("Dpad Down"):
+                return "down"
             return None
-        if x == -1:
-            return "left"
-        if x == 1:
-            return "right"
-        if y == 1:
-            return "up"
-        if y == -1:
-            return "down"
-
-    def dpad_direction_mac(self):
-        """Return string of D-pad direction - Mac version"""
-        if self.is_pressed("Dpad Left"):
-            return "left"
-        if self.is_pressed("Dpad Right"):
-            return "right"
-        if self.is_pressed("Dpad Up"):
-            return "up"
-        if self.is_pressed("Dpad Down"):
-            return "down"
+        else:
+            # Default (Windows/Linux) using self.dpad
+            x, y = self.dpad
+            if (x, y) == (0, 0):
+                return None
+            if x == -1:
+                return "left"
+            if x == 1:
+                return "right"
+            if y == 1:
+                return "up"
+            if y == -1:
+                return "down"

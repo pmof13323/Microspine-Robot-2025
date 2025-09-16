@@ -17,7 +17,6 @@ if __name__ == "__main__":
         while True:
             controller.update()
             dir = controller.dpad_direction()
-            dir = controller.dpad_direction_mac()
             selector.select_gait_by_button(dir)
 
             # Run current gait
