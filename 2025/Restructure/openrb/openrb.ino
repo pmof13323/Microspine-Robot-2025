@@ -87,6 +87,10 @@ void setup(){
         dxlInterface.setDXLControlMode(id, OP_POSITION);
     }
 
+    for (uint8_t id = 13; id <= 16; ++id) {
+        dxlInterface.setDXLControlMode(id, OP_VELOCITY);
+    }
+
     DEBUG_SERIAL.println(F("Ready"));
 }
 
@@ -124,7 +128,13 @@ void loop(){
         for(int i=1; i<n; i+=2){
             int id = tok[i].toInt();
             int pos = tok[i+1].toInt();
-            dxlInterface.setPosition(id, pos);
+            if (id>12 && id<=16){
+                dxlInterface.setVelocity(id, pos);
+            } else if (id>0 && id<=12) {
+                dxlInterface.setPosition(id, pos);
+            }
+
+            
         }
         dxlInterface.writeDXLData();  // send all at once
     }

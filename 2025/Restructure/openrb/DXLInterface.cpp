@@ -46,25 +46,39 @@ int DXLInterface::configureDXLBuffers() {
     }
     SyncRead_info.is_info_changed = true;
 
-    // Fill the members of structure to syncWrite using internal packet buffer
-    SyncWrite_info.packet.p_buf = nullptr;
-    SyncWrite_info.packet.is_completed = false;
-    SyncWrite_info.addr = SW_START_ADDR;
-    SyncWrite_info.addr_length = SW_ADDR_LEN;
-    SyncWrite_info.p_xels = SyncWrite_data_info;
-    SyncWrite_info.xel_count = 0;
-
-    // Insert a initial Position to the syncWrite Packet
-    for (int i = 0; i < num_IDs; i++) {
-        SyncWrite_data[i].goal_position = des_positions[i];
-    }
+    // --- Sync Write: Goal Position ---
+    SyncWritePos_info.packet.p_buf = nullptr;  // internal buffer
+    SyncWritePos_info.packet.is_completed = false;
+    SyncWritePos_info.addr = 116; // Goal Position start address
+    SyncWritePos_info.addr_length = sizeof(int32_t);
+    SyncWritePos_info.p_xels = SyncWritePos_data_info;
+    SyncWritePos_info.xel_count = 0;
 
     for (int i = 0; i < num_IDs; i++) {
-        SyncWrite_data_info[i].id = IDs[i];
-        SyncWrite_data_info[i].p_data = (uint8_t *)&SyncWrite_data[i].goal_position;
-        SyncWrite_info.xel_count++;
+        SyncWritePos_data[i].goal_position = des_positions[i]; // initialise
+        SyncWritePos_data_info[i].id = IDs[i];
+        SyncWritePos_data_info[i].p_data = (uint8_t *)&SyncWritePos_data[i];
+        SyncWritePos_info.xel_count++;
     }
-    SyncWrite_info.is_info_changed = true;
+    SyncWritePos_info.is_info_changed = true;
+
+    // --- Sync Write: Goal Velocity ---
+    SyncWriteVel_info.packet.p_buf = nullptr;  // internal buffer
+    SyncWriteVel_info.packet.is_completed = false;
+    SyncWriteVel_info.addr = 104; // Goal Velocity start address
+    SyncWriteVel_info.addr_length = sizeof(int32_t);
+    SyncWriteVel_info.p_xels = SyncWriteVel_data_info;
+    SyncWriteVel_info.xel_count = 0;
+
+    for (int i = 0; i < num_IDs; i++) {
+        SyncWriteVel_data[i].goal_velocity = 0; // start with zero velocity
+        SyncWriteVel_data_info[i].id = IDs[i];
+        SyncWriteVel_data_info[i].p_data = (uint8_t *)&SyncWriteVel_data[i];
+        SyncWriteVel_info.xel_count++;
+    }
+    SyncWriteVel_info.is_info_changed = true;
+
+    return 1; // success
 }
 
 int DXLInterface::registerDXL(int ID) {
@@ -135,25 +149,59 @@ int DXLInterface::enableDXLTorque(int ID) {
         Serial.println(dxl.readControlTableItem(0x50, ID));
     }
 }
+
+int DXLInterface::enableDXLTorqueNoAcceleration(int ID) {
+    dxl.torqueOn(ID);
+
+    return 1;
+}
+
 int DXLInterface::disableDXLTorque(int ID) {
     dxl.torqueOff(ID);
 }
 
 int DXLInterface::setPosition(int ID, int position) {
-
     int found = 0;
     for (int i = 0; i < num_IDs; i++) {
         if (ID == IDs[i]) {
             des_positions[i] = position;
-            SyncWrite_data[i].goal_position = position;
+            SyncWritePos_data[i].goal_position = position;
             found = 1;
         }
     }
 
-    // Data has changed - update DXLs.
-    SyncWrite_info.is_info_changed = true;
+    // Mark position sync-write group as changed
+    if (found) {
+        SyncWritePos_info.is_info_changed = true;
+    }
 
-    // Return true if found and set correctly
+    return found;
+}
+
+int DXLInterface::setVelocity(int ID, int velocity) {
+    int found = 0;
+    for (int i = 0; i < num_IDs; i++) {
+        if (ID == IDs[i]) {
+            des_velocities[i] = velocity;
+
+            // Convert velocity request to raw Dynamixel value
+            if (velocity == 1) {
+                SyncWriteVel_data[i].goal_velocity = 2047;
+            } else if (velocity == -1) {
+                SyncWriteVel_data[i].goal_velocity = -2047;
+            } else {
+                SyncWriteVel_data[i].goal_velocity = 0;
+            }
+
+            found = 1;
+        }
+    }
+
+    // Mark velocity sync-write group as changed
+    if (found) {
+        SyncWriteVel_info.is_info_changed = true;
+    }
+
     return found;
 }
 
@@ -193,7 +241,11 @@ int DXLInterface::setDXLControlMode(int ID, int mode) {
         Serial.println(result);
     }
 
-    enableDXLTorque(ID);
+    if (mode == OP_VELOCITY){
+        enableDXLTorqueNoAcceleration(ID);
+    } else {
+        enableDXLTorque(ID);
+    }
 }
 
 int DXLInterface::getPosition(int ID) {
@@ -280,34 +332,52 @@ int DXLInterface::readDXLData() {
 }
 
 int DXLInterface::writeDXLData() {
-
-    // Update the SyncWrite packet status
-    // TODO: Update this based on access?
-
     int try_count = 0;
 
-    if (SyncWrite_info.is_info_changed == true) {
-        // Build a syncWrite Packet and transmit to DYNAMIXEL
-        if (dxl.syncWrite(&SyncWrite_info) == true) {
+    // --- Write Positions ---
+    if (SyncWritePos_info.is_info_changed) {
+        if (dxl.syncWrite(&SyncWritePos_info)) {
             if (DEBUG) {
-                Serial.println("[SyncWrite] Success");
-                Serial.println(SyncWrite_info.xel_count);
-            }
-            for (int i = 0; i < SyncWrite_info.xel_count; i++) {
-                if (DEBUG) {
+                Serial.println("[SyncWrite] Positions Success");
+                Serial.print("Count: ");
+                Serial.println(SyncWritePos_info.xel_count);
+                for (int i = 0; i < SyncWritePos_info.xel_count; i++) {
                     Serial.print("  ID: ");
-                    Serial.print(SyncWrite_info.p_xels[i].id);
+                    Serial.print(SyncWritePos_info.p_xels[i].id);
                     Serial.print("\t Goal Position: ");
-                    Serial.println(SyncWrite_data[i].goal_position);
+                    Serial.println(SyncWritePos_data[i].goal_position);
                 }
             }
         } else {
-            Serial.print("[SyncWrite] Fail, Lib error code: ");
-            Serial.print(dxl.getLastLibErrCode());
+            Serial.print("[SyncWrite] Positions Fail, Lib error code: ");
+            Serial.println(dxl.getLastLibErrCode());
         }
+        SyncWritePos_info.is_info_changed = false; // reset flag
     }
 
-    // delay(300);
+    // --- Write Velocities ---
+    if (SyncWriteVel_info.is_info_changed) {
+        if (dxl.syncWrite(&SyncWriteVel_info)) {
+            if (DEBUG) {
+                Serial.println("[SyncWrite] Velocities Success");
+                Serial.print("Count: ");
+                Serial.println(SyncWriteVel_info.xel_count);
+                for (int i = 0; i < SyncWriteVel_info.xel_count; i++) {
+                    Serial.print("  ID: ");
+                    Serial.print(SyncWriteVel_info.p_xels[i].id);
+                    Serial.print("\t Goal Velocity: ");
+                    Serial.println(SyncWriteVel_data[i].goal_velocity);
+                }
+            }
+        } else {
+            Serial.print("[SyncWrite] Velocities Fail, Lib error code: ");
+            Serial.println(dxl.getLastLibErrCode());
+        }
+        SyncWriteVel_info.is_info_changed = false; // reset flag
+    }
+
+    return 1; // success
 }
+
 
 int DXLInterface::updateDXLData() {}

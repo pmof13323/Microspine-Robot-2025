@@ -25,7 +25,8 @@ const uint16_t BUF_SIZE = 256;
 
 const uint16_t SR_START_ADDR = 126;     // Present Load
 const uint16_t SR_ADDR_LEN = 2 + 4 + 4; // Load + Vel + Pos
-const uint16_t SW_START_ADDR = 116;     // Goal position
+const uint16_t SW_VEL_START_ADDR = 104; // goal velocity
+const uint16_t SW_POS_START_ADDR = 116; //goal postion
 const uint16_t SW_ADDR_LEN = 4;
 
 typedef struct SyncReadDataStruct {
@@ -34,9 +35,14 @@ typedef struct SyncReadDataStruct {
     int32_t present_position;
 } __attribute__((packed)) SyncReadData_t;
 
-typedef struct SyncWriteDataStruct {
-    int32_t goal_position;
-} __attribute__((packed)) SyncWriteData_t;
+typedef struct {
+    int32_t goal_velocity;  // For sync write at 104
+} __attribute__((packed)) SyncWriteVelocity_t;
+
+typedef struct {
+    int32_t goal_position;  // For sync write at 116
+} __attribute__((packed)) SyncWritePosition_t;
+
 
 class DXLInterface {
 
@@ -59,9 +65,13 @@ class DXLInterface {
     DYNAMIXEL::InfoSyncReadInst_t SyncRead_info;
     DYNAMIXEL::XELInfoSyncRead_t SyncRead_data_info[NUM_DXLs];
 
-    SyncWriteData_t SyncWrite_data[NUM_DXLs];
-    DYNAMIXEL::InfoSyncWriteInst_t SyncWrite_info;
-    DYNAMIXEL::XELInfoSyncWrite_t SyncWrite_data_info[NUM_DXLs];
+    SyncWritePosition_t SyncWritePos_data[NUM_DXLs];
+    DYNAMIXEL::InfoSyncWriteInst_t SyncWritePos_info;
+    DYNAMIXEL::XELInfoSyncWrite_t SyncWritePos_data_info[NUM_DXLs];
+
+    SyncWriteVelocity_t SyncWriteVel_data[NUM_DXLs];
+    DYNAMIXEL::InfoSyncWriteInst_t SyncWriteVel_info;
+    DYNAMIXEL::XELInfoSyncWrite_t SyncWriteVel_data_info[NUM_DXLs];
 
     uint8_t user_pkt_buf[BUF_SIZE];
 
@@ -82,6 +92,7 @@ public:
     // Group Methods
     // - Immediate Mode
     int enableDXLTorque(int ID);
+    int enableDXLTorqueNoAcceleration(int ID);
     int disableDXLTorque(int ID);
 
     int setDXLControlMode(int ID, int mode);

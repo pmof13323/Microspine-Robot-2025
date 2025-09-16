@@ -252,6 +252,7 @@ class PosGait:
                 (base_id+1, deg_to_dxl(q1)),
                 (base_id+2, deg_to_dxl(q2)),
                 (base_id+3, deg_to_dxl(q3)),
+                (self.leg+12, self.grip)
             ])
 
         else:  # BODY MODE
