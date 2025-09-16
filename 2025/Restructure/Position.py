@@ -135,7 +135,7 @@ class PosGait:
         self.limHipYaw, self.limHipPitch, self.limKneePitch = (-90,90), (-120,120), (-120,120)
         self.limAnkle = 20.0
 
-        self.inc = 4.0
+        self.inc = 3.0
         self.dead = 0.30
         self.leg = 1
         self.grip = 0.0
@@ -297,5 +297,14 @@ class PosGait:
 
         # 🔑 Send everything in one go
         if sync_targets:
+            print(f"\n")
+            print(f"+-------------------------------------+-----------------+")
+            print(f" Controlling Leg Number {self.leg}             | Grip Mode: {self.grip:.2f}")
+            print(f"+----------+--------------------------+-----------------+")
+            print(f" Angles    | HY: {q1:.2f}deg,  HP: {q2:.2f}deg, KP: {q3:.2f}deg")
+            print(f"+----------+--------------------------------------------+")
+            print(f" Positions | x = {self.Pw[0]:.1f}mm, y = {self.Pw[1]:.1f}mm, z = {self.Pw[2]:.1f}mm")
+            print(f"+----------+--------------------------------------------+")
             self.rb.send_sync_positions(sync_targets)
-            time.sleep(0.02)  # reduce serial spam but keep fast loop
+            print(f"+-------------------------------------------------------+")
+            time.sleep(0.03)  # reduce serial spam but keep fast loop

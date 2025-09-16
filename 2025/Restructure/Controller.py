@@ -42,7 +42,11 @@ class Controller:
                 7:"Left_Stick",
                 8:"Right_Stick",    
                 9:"Left_bumper",
-                10:"Right_bumper", 
+                10:"Right_bumper",
+                11:"Dpad Up",
+                12:"Dpad Down",
+                13:"Dpad Left",
+                14:"Dpad Right",
             }
 
         # store current button states
@@ -83,4 +87,15 @@ class Controller:
         if y == 1:
             return "up"
         if y == -1:
+            return "down"
+
+    def dpad_direction_mac(self):
+        """Return string of D-pad direction - Mac version"""
+        if self.is_pressed("Dpad Left"):
+            return "left"
+        if self.is_pressed("Dpad Right"):
+            return "right"
+        if self.is_pressed("Dpad Up"):
+            return "up"
+        if self.is_pressed("Dpad Down"):
             return "down"

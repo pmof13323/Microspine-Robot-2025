@@ -77,18 +77,21 @@ try:
                 print(f"stick {i} moved: {val:.2f}")
                 ## ser.write((f"STICK {i} {val:.2f}\n").encode())
 
-        num_hats = joystick.get_numhats()
-        if num_hats > 0:
-            D_pad = joystick.get_hat(0)
-            if D_pad != (0, 0):
-                if D_pad[0] == -1:
-                    print("D-pad Left")
-                if D_pad[0] == 1:
-                    print("D-pad Right")
-                if D_pad[1] == -1:
-                    print("D-pad Down")
-                if D_pad[1] == 1:
-                    print("D-pad Up")
+        # --- D-pad check ---
+        # macOS/Linux: hat(0)
+        if joystick.get_numhats() > 0:
+            dx, dy = joystick.get_hat(0)
+            if dx == 1:  print("D-pad Right")
+            if dx == -1: print("D-pad Left")
+            if dy == 1:  print("D-pad Up")
+            if dy == -1: print("D-pad Down")
+
+        # Windows fallback: buttons
+        else:
+            if joystick.get_button(11): print("D-pad Up +")
+            if joystick.get_button(12): print("D-pad Down +")
+            if joystick.get_button(13): print("D-pad Left +")
+            if joystick.get_button(14): print("D-pad Right +")
 
 
         pygame.time.wait(50)
