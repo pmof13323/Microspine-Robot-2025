@@ -260,19 +260,21 @@ class PosGait:
                 T_candidate = self.body_T + dT
                 all_ok = True
                 sols = {}
+                Pws={}
                 for i in (1,2,3,4):
                     Pw_eff = self.body_anchors[i] - T_candidate
-                    sol, ok = self._solve_leg_for_world_target(i, Pw_eff)
+                    sol, ok= self._solve_leg_for_world_target(i, Pw_eff)
                     sols[i] = (sol, ok, Pw_eff)
+                    Pws[i] = ()
                     if not ok:
                         all_ok = False
                         break
                 if all_ok:
                     self.body_T = T_candidate
                     for i in (1,2,3,4):
-                        sol, _, _ = sols[i]
+                        sol, _, Pws = sols[i]
                         self.last_valid[i]["sol"] = sol
-                        self.last_valid[i]["Pw"]  = self.body_anchors[i].copy()
+                        self.last_valid[i]["Pw"]  = Pws
                         q1,q2,q3 = sol["qdeg"]
                         q3 = -q3
                         base_id = (i - 1) * 3
