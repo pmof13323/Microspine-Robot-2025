@@ -44,7 +44,6 @@ int DXLInterface::configureDXLBuffers() {
         SyncRead_data_info[i].p_recv_buf = (uint8_t *)&SyncRead_data[i];
         SyncRead_info.xel_count++;
     }
-    SyncRead_info.is_info_changed = true;
 
     // --- Sync Write: Goal Position ---
     SyncWritePos_info.packet.p_buf = nullptr;  // internal buffer
@@ -182,7 +181,9 @@ int DXLInterface::setVelocity(int ID, int velocity) {
     int found = 0;
     for (int i = 0; i < num_IDs; i++) {
         if (ID == IDs[i]) {
-            des_velocities[i] = velocity;
+            //SyncWriteVel_data[i].goal_velocity = velocity;
+
+            //des_velocities[i] = velocity;
 
             // Convert velocity request to raw Dynamixel value
             if (velocity == 1) {
