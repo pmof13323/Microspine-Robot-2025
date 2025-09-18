@@ -1,0 +1,7 @@
+#!/home/microspines/Documents/Microspine-Robot-2025/2025/Restructure/frontend/venv/bin/python3
+import sys
+from uvicorn.main import main
+if __name__ == '__main__':
+    if sys.argv[0].endswith('.exe'):
+        sys.argv[0] = sys.argv[0][:-4]
+    sys.exit(main())

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Robot Dashboard</title>
+  <style>
+    body { background: #111; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
+    .grid { display: grid; grid-template-columns: 2fr 2fr; grid-template-rows: auto 1fr; gap: 10px; padding: 10px; height: 100vh; }
+
+    .camera { grid-column: 1 / span 2; background: #000; border-radius: 12px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .camera img { width: 100%; height: 100%; object-fit: cover; }
+
+    .quadrant { background: #222; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .quadrant h3 { margin: 0 0 5px 0; }
+
+    .torque-bar { background: #444; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+    .torque-fill { height: 100%; width: 0%; background: limegreen; transition: width 0.2s; }
+
+    .position { font-size: 0.85em; margin-top: 5px; }
+    .sensors { display: flex; gap: 5px; margin-top: 5px; }
+    .sensor { flex: 1; text-align: center; border-radius: 5px; padding: 3px; font-size: 0.8em; }
+
+    .mode-select { background: #222; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .mode-select label { cursor: pointer; }
+
+    .serial { background: #222; border-radius: 12px; padding: 10px; font-family: monospace; font-size: 0.75em; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+<div class="grid">
+  <!-- Camera -->
+  <div class="camera">
+    <img id="camera-feed" src="http://172.20.10.5:8000/camera/stream" alt="Camera Feed">
+  </div>
+
+  <!-- Quadrants -->
+  <div class="quadrant" id="front-left"></div>
+  <div class="quadrant" id="front-right"></div>
+  <div class="quadrant" id="back-left"></div>
+  <div class="quadrant" id="back-right"></div>
+
+  <!-- Mode Select -->
+  <div class="mode-select">
+    <label><input type="radio" name="mode" value="positional" checked> Positional</label>
+    <label><input type="radio" name="mode" value="angular"> Angular</label>
+    <label><input type="radio" name="mode" value="walk"> Walk</label>
+    <label><input type="radio" name="mode" value="display"> Display</label>
+  </div>
+
+  <!-- Serial Console -->
+  <div class="serial" id="serial-console"></div>
+</div>
+
+<script>
+const quadrants = {
+  "front-left": "Front Left",
+  "front-right": "Front Right",
+  "back-left": "Back Left",
+  "back-right": "Back Right"
+};
+
+function createQuadrantHTML(label) {
+  return `
+    <h3>${label}</h3>
+    <div>Limb Angles / Torque</div>
+    <div class="torque-bar"><div class="torque-fill"></div></div>
+    <div class="position">
+      x: <span class="x">0</span><br>
+      y: <span class="y">0</span><br>
+      z: <span class="z">0</span>
+    </div>
+    <div class="sensors">
+      <div class="sensor s0">0</div>
+      <div class="sensor s1">0</div>
+      <div class="sensor s2">0</div>
+    </div>
+  `;
+}
+
+// Build quadrants
+for (const id in quadrants) {
+  document.getElementById(id).innerHTML = createQuadrantHTML(quadrants[id]);
+}
+
+async function updateDashboard() {
+  try {
+    const res = await fetch("http://172.20.10.5:8000/data");
+    const data = await res.json();
+
+    const ids = ["front-left","front-right","back-left","back-right"];
+    ids.forEach((id, i) => {
+      const card = document.getElementById(id);
+      const torque = data.torques[i];
+      card.querySelector(".torque-fill").style.width = `${Math.min(Math.abs(torque)*20,100)}%`;
+      const pos = data.positions[i];
+      card.querySelector(".x").textContent = pos[0].toFixed(2);
+      card.querySelector(".y").textContent = pos[1].toFixed(2);
+      card.querySelector(".z").textContent = pos[2].toFixed(2);
+      const sensors = card.querySelectorAll(".sensor");
+      data.sensors[i].forEach((force,j) => {
+        sensors[j].textContent = force.toFixed(1) + "N";
+        sensors[j].style.backgroundColor = force > 3 ? "green" : force > 1 ? "yellow" : "red";
+      });
+    });
+
+    // Serial console (optional)
+    document.getElementById("serial-console").textContent = data.serial.join("\n");
+  } catch(e) { console.error(e); }
+}
+
+// Update dashboard data every 200ms (camera feed is now live MJPEG)
+setInterval(updateDashboard, 200);
+</script>
+
+</body>
+</html>
