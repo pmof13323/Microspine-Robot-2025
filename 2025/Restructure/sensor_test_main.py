@@ -1,5 +1,5 @@
 import time
-from sensor_array import SensorArray  # assuming you put the class in sensor_array.py
+from sensor_read import SensorArray  # assuming you put the class in sensor_array.py
 
 def main():
     sensors = SensorArray()
