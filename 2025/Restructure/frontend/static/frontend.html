@@ -1,117 +1,322 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Robot Dashboard</title>
-  <style>
-    body { background: #111; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
-    .grid { display: grid; grid-template-columns: 2fr 2fr; grid-template-rows: auto 1fr; gap: 10px; padding: 10px; height: 100vh; }
+<meta charset="UTF-8">
+<title>Robot Dashboard</title>
+<style>
+  body {
+    background: #0d0d0d;
+    color: #e0e0e0;
+    font-family: 'Roboto Mono', monospace;
+    margin: 0;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 1fr 55% 1fr;
+    gap: 15px;
+    height: 100vh;
+    box-sizing: border-box;
+  }
 
-    .camera { grid-column: 1 / span 2; background: #000; border-radius: 12px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-    .camera img { width: 100%; height: 100%; object-fit: cover; }
+  /* Center column: camera + bottom row */
+  .center-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+  }
 
-    .quadrant { background: #222; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-    .quadrant h3 { margin: 0 0 5px 0; }
+  .camera {
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px #ff840077;
+  }
+  .camera img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
 
-    .torque-bar { background: #444; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
-    .torque-fill { height: 100%; width: 0%; background: limegreen; transition: width 0.2s; }
+  /* Bottom row (mode + terminal) takes remaining space */
+  .bottom-row {
+    display: flex;
+    gap: 12px;
+    flex-grow: 1; /* fill remaining height */
+  }
 
-    .position { font-size: 0.85em; margin-top: 5px; }
-    .sensors { display: flex; gap: 5px; margin-top: 5px; }
-    .sensor { flex: 1; text-align: center; border-radius: 5px; padding: 3px; font-size: 0.8em; }
+  .mode-select {
+    display: flex;
+    flex-direction: column;
+    background: #111;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: inset 0 0 5px #00ffcc22;
+    width: 150px;
+    height: 100%; /* fill bottom row vertically */
+  }
+  .mode-select label {
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 4px;
+    background: #222;
+    border: 1px solid #333;
+    transition: background 0.2s, border 0.2s;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+  }
+  .mode-select input[type="radio"]:checked + label {
+    background: #ff7b00;
+    color: #000;
+    border-color: #363531;
+  }
 
-    .mode-select { background: #222; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-    .mode-select label { cursor: pointer; }
+  .terminal {
+    flex: 1;
+    background: #111;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75em;
+    overflow-y: auto;
+    height: 100%; /* fill bottom row vertically */
+    box-shadow: inset 0 0 8px #00ffcc11;
+  }
 
-    .serial { background: #222; border-radius: 12px; padding: 10px; font-family: monospace; font-size: 0.75em; overflow-y: auto; }
-  </style>
+  /* Side quadrants */
+  .side-grid {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .quadrant {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 1.3em;
+  }
+
+  .quadrant-header {
+    font-weight: bold;
+    color: #ff8800;
+    font-size: 2.2em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .quadrant-light {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background-color: #333;
+    border: 1px solid #ff8000;
+    box-shadow: 0 0 3px #43454533;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 2px 4px;
+    border-bottom: 1px solid #333;
+  }
+  .limb-table th, .limb-table td {
+    font-size: 1em;
+  }
+  .torque-bar {
+    background: #222;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .torque-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #1cba00, #ff0000);
+    transition: width 0.15s ease-out;
+  }
+  .sensor-box {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    border-radius: 2px;
+  }
+  .overall-torque {
+    margin-top: 4px;
+  }
+</style>
 </head>
 <body>
 
-<div class="grid">
-  <!-- Camera -->
-  <div class="camera">
-    <img id="camera-feed" src="http://172.20.10.5:8000/camera/stream" alt="Camera Feed">
-  </div>
-
-  <!-- Quadrants -->
+<!-- Left Column -->
+<div class="side-grid">
   <div class="quadrant" id="front-left"></div>
-  <div class="quadrant" id="front-right"></div>
   <div class="quadrant" id="back-left"></div>
-  <div class="quadrant" id="back-right"></div>
+</div>
 
-  <!-- Mode Select -->
-  <div class="mode-select">
-    <label><input type="radio" name="mode" value="positional" checked> Positional</label>
-    <label><input type="radio" name="mode" value="angular"> Angular</label>
-    <label><input type="radio" name="mode" value="walk"> Walk</label>
-    <label><input type="radio" name="mode" value="display"> Display</label>
+<!-- Center Column -->
+<div class="center-column">
+  <div class="camera">
+    <img id="camera-feed" src="http://localhost:8000/camera/stream" alt="Camera Feed">
   </div>
 
-  <!-- Serial Console -->
-  <div class="serial" id="serial-console"></div>
+  <div class="bottom-row">
+    <!-- Mode Box -->
+    <div class="mode-select">
+      <input type="radio" id="mode-pos" name="mode" value="positional" checked hidden>
+      <label for="mode-pos">Positional</label>
+
+      <input type="radio" id="mode-ang" name="mode" value="angular" hidden>
+      <label for="mode-ang">Angular</label>
+
+      <input type="radio" id="mode-walk" name="mode" value="walk" hidden>
+      <label for="mode-walk">Walk</label>
+
+      <input type="radio" id="mode-display" name="mode" value="display" hidden>
+      <label for="mode-display">Display</label>
+    </div>
+
+    <!-- Terminal -->
+    <div class="terminal" id="serial-console"></div>
+  </div>
+</div>
+
+<!-- Right Column -->
+<div class="side-grid">
+  <div class="quadrant" id="front-right"></div>
+  <div class="quadrant" id="back-right"></div>
 </div>
 
 <script>
-const quadrants = {
-  "front-left": "Front Left",
-  "front-right": "Front Right",
-  "back-left": "Back Left",
-  "back-right": "Back Right"
-};
+const quadrants = ["front-left","front-right","back-left","back-right"];
 
 function createQuadrantHTML(label) {
   return `
-    <h3>${label}</h3>
-    <div>Limb Angles / Torque</div>
-    <div class="torque-bar"><div class="torque-fill"></div></div>
-    <div class="position">
-      x: <span class="x">0</span><br>
-      y: <span class="y">0</span><br>
-      z: <span class="z">0</span>
+    <div class="quadrant-header">
+      ${label.replace("-", " ").toUpperCase()}
+      <span class="quadrant-light" id="light-${label}"></span>
     </div>
-    <div class="sensors">
-      <div class="sensor s0">0</div>
-      <div class="sensor s1">0</div>
-      <div class="sensor s2">0</div>
+
+    <table class="limb-table">
+      <thead><tr><th>Limb</th><th>Angle</th><th>Torque</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Hip Yaw</td>
+          <td class="hip-yaw-angle">0</td>
+          <td><div class="torque-bar"><div class="torque-fill hip-yaw-torque"></div></div></td>
+        </tr>
+        <tr>
+          <td>Hip Pitch</td>
+          <td class="hip-pitch-angle">0</td>
+          <td><div class="torque-bar"><div class="torque-fill hip-pitch-torque"></div></div></td>
+        </tr>
+        <tr>
+          <td>Knee Pitch</td>
+          <td class="knee-pitch-angle">0</td>
+          <td><div class="torque-bar"><div class="torque-fill knee-pitch-torque"></div></div></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="sensor-table">
+      <thead><tr><th>Sensor</th><th>Force</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><span class="sensor-box s0"></span> <span class="s0-val">0.0 N</span></td></tr>
+        <tr><td>2</td><td><span class="sensor-box s1"></span> <span class="s1-val">0.0 N</span></td></tr>
+        <tr><td>3</td><td><span class="sensor-box s2"></span> <span class="s2-val">0.0 N</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="overall-torque">
+      <div class="torque-bar"><div class="torque-fill overall-torque-fill"></div></div>
     </div>
+
+
+    <table class="pos-table">
+      <tbody>
+        <tr><td>x Position = <span class="x">0.00 mm</span></td></tr>
+        <tr><td>y Position = <span class="y">0.00 mm</span></td></tr>
+        <tr><td>z Position = <span class="z">0.00 mm</span></td></tr>
+      </tbody>
+    </table>
   `;
 }
 
-// Build quadrants
-for (const id in quadrants) {
-  document.getElementById(id).innerHTML = createQuadrantHTML(quadrants[id]);
+quadrants.forEach(id => {
+  document.getElementById(id).innerHTML = createQuadrantHTML(id);
+});
+
+function setQuadrantLight(quadrantId, active) {
+  const light = document.getElementById(`light-${quadrantId}`);
+  if(light) {
+    if(active) {
+      light.style.backgroundColor = "#00ff00";
+      light.style.boxShadow = "0 0 6px #00ff0077";
+    } else {
+      light.style.backgroundColor = "#333";
+      light.style.boxShadow = "0 0 3px #00ffcc33";
+    }
+  }
 }
 
 async function updateDashboard() {
   try {
-    const res = await fetch("http://172.20.10.5:8000/data");
+    const res = await fetch("http://localhost:8000/data");
     const data = await res.json();
 
-    const ids = ["front-left","front-right","back-left","back-right"];
-    ids.forEach((id, i) => {
+    quadrants.forEach((id,i) => {
       const card = document.getElementById(id);
-      const torque = data.torques[i];
-      card.querySelector(".torque-fill").style.width = `${Math.min(Math.abs(torque)*20,100)}%`;
-      const pos = data.positions[i];
-      card.querySelector(".x").textContent = pos[0].toFixed(2);
-      card.querySelector(".y").textContent = pos[1].toFixed(2);
-      card.querySelector(".z").textContent = pos[2].toFixed(2);
-      const sensors = card.querySelectorAll(".sensor");
+
+      card.querySelector(".hip-yaw-torque").style.width = `${Math.min(Math.abs(data.torques[i][0]),100)}%`;
+      card.querySelector(".hip-pitch-torque").style.width = `${Math.min(Math.abs(data.torques[i][1]),100)}%`;
+      card.querySelector(".knee-pitch-torque").style.width = `${Math.min(Math.abs(data.torques[i][2]),100)}%`;
+
+      card.querySelector(".hip-yaw-angle").textContent = data.positions[i][0].toFixed(1);
+      card.querySelector(".hip-pitch-angle").textContent = data.positions[i][1].toFixed(1);
+      card.querySelector(".knee-pitch-angle").textContent = data.positions[i][2].toFixed(1);
+
+      card.querySelector(".x").textContent = data.positions[i][0].toFixed(2);
+      card.querySelector(".y").textContent = data.positions[i][1].toFixed(2);
+      card.querySelector(".z").textContent = data.positions[i][2].toFixed(2);
+
       data.sensors[i].forEach((force,j) => {
-        sensors[j].textContent = force.toFixed(1) + "N";
-        sensors[j].style.backgroundColor = force > 3 ? "green" : force > 1 ? "yellow" : "red";
+        const box = card.querySelector(`.s${j}`);
+        const val = card.querySelector(`.s${j}-val`);
+        val.textContent = force.toFixed(1) + " N";
+        box.style.backgroundColor = force > 3 ? "#00ffcc" : force > 1 ? "#ffaa00" : "#ff2222";
       });
+
+      const overall = Math.max(...data.torques[i].map(t => Math.abs(t)));
+      card.querySelector(".overall-torque-fill").style.width = `${Math.min(overall*20,100)}%`;
     });
 
-    // Serial console (optional)
-    document.getElementById("serial-console").textContent = data.serial.join("\n");
+    quadrants.forEach(id => setQuadrantLight(id, false));
+    if(data.activeQuadrant) setQuadrantLight(data.activeQuadrant, true);
+
+    if(data.serial) document.getElementById("serial-console").textContent = data.serial.join("\n");
   } catch(e) { console.error(e); }
 }
 
-// Update dashboard data every 200ms (camera feed is now live MJPEG)
 setInterval(updateDashboard, 200);
 </script>
-
 </body>
 </html>

@@ -36,7 +36,7 @@ def getSensors():
     return np.random.uniform(0, 5, (4, 3))
 
 def getTorque():
-    return np.random.uniform(-5, 5, 4)
+    return np.random.uniform(0, 100, 4)
 
 def getEEPos():
     return np.random.uniform(-350, 350, (4, 3))
