@@ -12,8 +12,8 @@ class SensorArray:
 
     def __init__(self):
         # Two ADCs: each has 6 pins → 2 groups per ADC
-        self.adc1 = ADCPi(0x68, 0x69, 18)
-        self.adc2 = ADCPi(0x6C, 0x6D, 18)
+        self.adc1 = ADCPi(0x68, 0x69, 12)
+        self.adc2 = ADCPi(0x6C, 0x6D, 12)
 
         # 4 groups × 3 sensors
         self.voltages = [[0.0 for _ in range(3)] for _ in range(4)]

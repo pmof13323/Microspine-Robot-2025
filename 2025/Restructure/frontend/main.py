@@ -13,19 +13,29 @@ import numpy as np
 import time
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sensor_read import SensorArray
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+import numpy as np
+from sensor_loop import SensorBackgroundReader  # <-- import your loop class
 
 app = FastAPI()
-
-# Mount 'static' directory to '/static' URL path
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Start background sensor reading
+sensor_reader = SensorBackgroundReader()
+sensor_reader.start()
 
 @app.get("/")
 async def root():
     return FileResponse("static/frontend.html")
 
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all origins for testing
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,11 +53,25 @@ def getEEPos():
 
 @app.get("/data")
 def get_robot_data():
+    data = sensor_reader.get_data()
+    if not data:
+        return {
+            "error": "No sensor data available",
+            "sensors": [],
+            "torques": [],
+            "positions": []
+        }
+
+    # Still using mock positions
+    positions = np.random.uniform(-350, 350, (4, 3)).tolist()
+
     return {
-        "sensors": getSensors().tolist(),
-        "torques": getTorque().tolist(),
-        "positions": getEEPos().tolist()
+        "sensors": data["sensors"],
+        "torques": data["torques"],
+        "positions": positions,
+        "timestamp": data["timestamp"]
     }
+
 
 # Configure camera once
 picam2 = Picamera2()
