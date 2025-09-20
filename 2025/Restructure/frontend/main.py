@@ -23,6 +23,7 @@ from sensor_loop import SensorBackgroundReader  # <-- import your loop class
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+OPENRB_STATE_FILE = "openrb_state.json"
 
 # Start background sensor reading
 sensor_reader = SensorBackgroundReader()
@@ -45,31 +46,41 @@ app.add_middleware(
 def getSensors():
     return np.random.uniform(0, 5, (4, 3))
 
-def getTorque():
-    return np.random.uniform(0, 100, 4)
-
 def getEEPos():
     return np.random.uniform(-350, 350, (4, 3))
 
 @app.get("/data")
 def get_robot_data():
-    data = sensor_reader.get_data()
-    if not data:
-        return {
-            "error": "No sensor data available",
-            "sensors": [],
-            "torques": [],
-            "positions": []
-        }
+    """
+    Serve the latest OpenRB motor states (separated lists for load, velocity, position)
+    along with sensor data and timestamp.
+    """
+    # --- Sensor data ---
+    sensor_data = sensor_reader.get_data()
+    sensors = sensor_data["sensors"] if sensor_data else []
+    timestamp = sensor_data["timestamp"] if sensor_data else None
 
-    # Still using mock positions
-    positions = np.random.uniform(-350, 350, (4, 3)).tolist()
+    # --- OpenRB motor state ---
+    loads, vels, positions = [], [], []
+    if os.path.exists(OPENRB_STATE_FILE):
+        try:
+            with open(OPENRB_STATE_FILE, "r") as f:
+                openrb_state = json.load(f)
+            # Separate values into lists
+            for motor_id in sorted(openrb_state.keys(), key=int):
+                motor = openrb_state[motor_id]
+                loads.append(motor.get("load", 0))
+                vels.append(motor.get("vel", 0))
+                positions.append(motor.get("pos", 0))
+        except json.JSONDecodeError:
+            loads, vels, positions = [], [], []
 
     return {
-        "sensors": data["sensors"],
-        "torques": data["torques"],
+        "sensors": sensors,
+        "loads": loads,
+        "velocities": vels,
         "positions": positions,
-        "timestamp": data["timestamp"]
+        "timestamp": timestamp
     }
 
 

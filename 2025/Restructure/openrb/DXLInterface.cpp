@@ -332,6 +332,24 @@ int DXLInterface::readDXLData() {
     }
 }
 
+String DXLInterface::getReadData(){
+    String line = "READ ";
+
+    for (int i = 0; i < num_IDs; i++) {
+        line += String(IDs[i]);
+        line += ",";
+        line += String(positions[i]);
+        line += ",";
+        line += String(velocities[i]);
+        line += ",";
+        line += String(loads[i]);
+        if (i < num_IDs - 1) line += ";";
+    }
+
+    return line;
+}
+
+
 int DXLInterface::writeDXLData() {
     int try_count = 0;
 

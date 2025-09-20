@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 // Number of Dynamixels
-#define NUM_DXLs 16
+#define NUM_DXLs 1
 
 // Serial port and direction pin
 #define DXL_SERIAL Serial1
