@@ -12,7 +12,7 @@
 using namespace ControlTableItem;
 
 const float    DXL_PROTOCOL_VERSION = 2.0;
-const uint32_t DXL_BAUD             = 57600;
+const uint32_t DXL_BAUD             = 1000000;
 
 // ================== Motor map & limits ==================
 // IDs: 1..12 (1=Leg1 Yaw, 2=Leg1 Hip, 3=Leg1 Knee, 4..6=Leg2, 7..9=Leg3, 10..12=Leg4)

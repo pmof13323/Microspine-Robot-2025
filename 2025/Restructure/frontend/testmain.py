@@ -32,7 +32,8 @@ def getSensors():
     return np.random.uniform(0, 5, (4, 3))
 
 def getTorque():
-    return np.random.uniform(0, 100, 4)
+    # 4 legs × 3 joints (yaw, hip, knee)
+    return np.random.uniform(0, 100, (4, 3))
 
 def getEEPos():
     return np.random.uniform(-350, 350, (4, 3))
@@ -40,10 +41,13 @@ def getEEPos():
 @app.get("/data")
 def get_robot_data():
     return {
-        "sensors": getSensors().tolist(),
-        "torques": getTorque().tolist(),
-        "positions": getEEPos().tolist()
-    }
+        "sensors":   getSensors().tolist(),   # (4,3)
+        "torques":   getTorque().tolist(),    # (4,3)  <-- now matches FE
+        "positions": getEEPos().tolist()      # (4,3)
+        # optionally add:
+        # "activeQuadrant": "front-left",
+        # "serial": ["Boot OK", "SYNC ..."]
+}
 
 # --- FAKE CAMERA STREAM (COLORED SQUARE) ---
 def generate_frames(video_path="asteroid.mp4"):

@@ -1,168 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Robot Dashboard</title>
 <style>
-  body {
-    background: #0d0d0d;
-    color: #e0e0e0;
-    font-family: 'Roboto Mono', monospace;
-    margin: 0;
-    padding: 15px;
-    display: grid;
-    grid-template-columns: 1fr 55% 1fr;
-    gap: 15px;
-    height: 100vh;
-    box-sizing: border-box;
+  :root{
+    --controller-height: 85%;
+    --col1: 36%;  --col2: 24%;  --col3: 40%;
+    --panel-bg:#111; --panel-br:#333; --accent:#ff8800; --accent-strong:#ff7b00;
   }
 
-  /* Center column: camera + bottom row */
-  .center-column {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    height: 100%;
+  html { box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { height: 100%; overflow: hidden; }
+
+  body{
+    background:#0d0d0d; color:#e0e0e0; font-family:'Roboto Mono', monospace;
+    margin:0; padding:15px;
+    display:grid; grid-template-columns:1fr 55% 1fr; gap:15px; height:100vh;
   }
 
-  .camera {
-    aspect-ratio: 16 / 9;
-    background: #000;
-    border: 2px solid #333;
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 10px #ff840077;
-  }
-  .camera img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 6px;
-  }
+  /* ---------- Center column ---------- */
+  .center-column{ display:grid; gap:12px; height:100%; min-height:0; grid-template-rows:auto 1fr; }
 
-  /* Bottom row (mode + terminal) takes remaining space */
-  .bottom-row {
-    display: flex;
-    gap: 12px;
-    flex-grow: 1; /* fill remaining height */
+  /* Camera */
+  .camera-panel{ position: relative; }
+  .camera{
+    aspect-ratio: var(--cam-ar, 16/9);
+    background:#000; border:2px solid var(--panel-br); border-radius:8px; overflow:hidden;
+    height:auto; width:100%; box-shadow:none; position:relative; font-size:1.3em;
   }
+  .camera-title{
+    position:absolute; left:50%; top:0; transform:translate(-50%, 0);
+    background:#000; color:var(--accent); font-weight:bold; font-size:2.2em; text-transform:uppercase;
+    line-height:1; padding:4px 12px; border-left:1px solid var(--panel-br); border-right:1px solid var(--panel-br); border-bottom:1px solid var(--panel-br);
+    border-bottom-left-radius:8px; border-bottom-right-radius:8px; box-shadow:none; z-index:2; pointer-events:none;
+  }
+  .camera img{ width:100%; height:100%; display:block; object-fit:contain; object-position:center; border-radius:6px; }
 
-  .mode-select {
-    display: flex;
-    flex-direction: column;
-    background: #111;
-    border: 2px solid #333;
-    border-radius: 8px;
-    padding: 8px;
+  .bottom-row{ display:flex; gap:12px; min-height:0; }
+
+  /* Left stack: Mode + Aux */
+  .left-stack{ display:flex; flex-direction:column; gap:12px; width:350px; height:100%; min-height:0; flex:0 0 auto; }
+
+  .mode-select{
+    display:flex; flex-direction:column;
+    background:var(--panel-bg); border:2px solid var(--panel-br); border-radius:8px; padding:8px;
     box-shadow: inset 0 0 5px #00ffcc22;
-    width: 150px;
-    height: 100%; /* fill bottom row vertically */
-  }
-  .mode-select label {
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: 4px;
-    background: #222;
-    border: 1px solid #333;
-    transition: background 0.2s, border 0.2s;
-    font-size: 0.9em;
-    margin-bottom: 4px;
-  }
-  .mode-select input[type="radio"]:checked + label {
-    background: #ff7b00;
-    color: #000;
-    border-color: #363531;
+    font-size:1.3em; flex: 1.01 1 0;
   }
 
-  .terminal {
-    flex: 1;
-    background: #111;
-    border: 2px solid #333;
-    border-radius: 8px;
-    padding: 10px;
-    font-family: 'Roboto Mono', monospace;
-    font-size: 0.75em;
-    overflow-y: auto;
-    height: 100%; /* fill bottom row vertically */
-    box-shadow: inset 0 0 8px #00ffcc11;
+  .quadrant-header{
+    font-weight:bold; color:var(--accent); font-size:2.2em; text-transform:uppercase;
+    border-bottom:1px solid var(--panel-br); padding:4px 8px; display:flex; align-items:center; gap:6px;
   }
 
-  /* Side quadrants */
-  .side-grid {
-    display: grid;
-    grid-template-rows: 1fr 1fr;
-    gap: 12px;
+  .mode-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px 2px 2px; }
+  .mode-grid label{
+    cursor:pointer; padding:8px 12px; border-radius:6px; background:#222; border:1px solid var(--panel-br); transition:background .2s, border .2s;
+    font-size:1em; text-align:center;
   }
+  .mode-grid input[type=radio]:checked + label{ background:var(--accent-strong); color:#000; border-color:#363531; }
 
-  .quadrant {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 1.3em;
+  .left-subpanel{
+    background:var(--panel-bg); border:2px solid var(--panel-br); border-radius:8px;
+    box-shadow: inset 0 0 5px #00ffcc22; min-height:0; flex:1 1 0; display:flex; flex-direction:column; font-size:1.3em;
   }
+  .left-subpanel .content{ padding:6px 10px 10px; overflow:auto; font-size:.9em; }
 
-  .quadrant-header {
-    font-weight: bold;
-    color: #ff8800;
-    font-size: 2.2em;
-    text-transform: uppercase;
-    border-bottom: 1px solid #333;
-    padding-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  /* Communications panel */
+  .terminal{
+    flex:1; min-width:0; height:100%; min-height:0; background:var(--panel-bg); border:2px solid var(--panel-br); border-radius:8px;
+    display:flex; flex-direction:column; font-family:'Roboto Mono', monospace; box-shadow: inset 0 0 8px #00ffcc11; font-size:1.3em;
   }
+  .terminal .quadrant-header{ justify-content:space-between; }
+  .header-actions{ display:inline-flex; gap:6px; }
+  .tab-btn{
+    appearance:none; border:1px solid var(--panel-br); background:#222; color:#e0e0e0; padding:6px 10px; border-radius:6px; font-size:.5em; letter-spacing:.03em;
+    cursor:pointer; transition:background .2s, border .2s, color .2s;
+  }
+  .tab-btn:hover{ border-color:#555; }
+  .tab-btn.active{ background:var(--accent-strong); color:#000; border-color:#363531; }
+  .terminal-content{ flex:1; padding:10px; font-size:.75em; min-height:0; }
+  #serial-console{ overflow:auto; }
+  #controller-view{ display:flex; flex-direction:column; gap:8px; overflow:hidden; }
 
-  .quadrant-light {
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    background-color: #333;
-    border: 1px solid #ff8000;
-    box-shadow: 0 0 3px #43454533;
-    transition: background 0.2s, box-shadow 0.2s;
-  }
+  /* Controller layout */
+  .controller-layout{ display:grid; grid-template-columns:200px 1fr; gap:12px; align-items:stretch; height:100%; min-height:0; }
+  .ctrl-side{ background:#0f0f0f; border:1px solid #2a2a2a; border-radius:8px; padding:8px; font-size:.8em; line-height:1.25; min-height:0; overflow:auto; }
+  .ctrl-side h4{ margin:0 0 6px 0; font-size:1.05em; color:#ddd; letter-spacing:.02em; }
+  .ctrl-side ul{ margin:0; padding-left:16px; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  th, td {
-    padding: 2px 4px;
-    border-bottom: 1px solid #333;
-  }
-  .limb-table th, .limb-table td {
-    font-size: 1em;
-  }
-  .torque-bar {
-    background: #222;
-    height: 6px;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .torque-fill {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #1cba00, #ff0000);
-    transition: width 0.15s ease-out;
-  }
-  .sensor-box {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-right: 4px;
-    border-radius: 2px;
-  }
-  .overall-torque {
-    margin-top: 4px;
-  }
+  /* ---------- Side quadrants ---------- */
+  .side-grid{ height:100%; min-height:0; display:grid; grid-template-rows:1fr 1fr; gap:12px; }
+  .quadrant{ background:var(--panel-bg); border:2px solid var(--panel-br); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; font-size:1.3em; min-height:0; overflow:hidden; }
+  #front-left .quadrant-header, #back-left .quadrant-header{ justify-content:space-between; flex-direction:row; }
+  #front-right .quadrant-header, #back-right .quadrant-header{ justify-content:space-between; flex-direction:row-reverse; }
+  .quadrant-light{ width:40px; height:40px; border-radius:50%; background:#333; border:2px solid #ff8000; box-shadow:0 0 5px #43454533; transition:background .2s, box-shadow .2s; }
+
+  /* Tables */
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th, td{ padding:2px 4px; border-bottom:1px solid var(--panel-br); text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .limb-table th, .limb-table td, .sensor-table th, .sensor-table td { font-size:1em; }
+  .c1{ width:var(--col1); } .c2{ width:var(--col2); } .c3{ width:var(--col3); }
+  .num{ font-variant-numeric:tabular-nums; text-align:right; }
+
+  /* Torque bars (gradient shows full range; cover reveals percentage) */
+  .torque-bar{ position:relative; background:linear-gradient(90deg,#1cba00,#ff0000); height:6px; border-radius:3px; overflow:hidden; width:100%; }
+  .torque-cover{ position:absolute; top:0; right:0; bottom:0; width:calc(100% - var(--p,0%)); background:#222; }
+
+  .overall-torque{ margin-top:4px; display:grid; grid-template-columns:auto 1fr; align-items:center; gap:8px; }
+  .overall-label{ opacity:.9; font-size:.9em; white-space:nowrap; }
+
+  .status-bar{ background:#222; height:6px; border-radius:3px; overflow:hidden; width:100%; }
+  .status-fill{ height:100%; width:100%; background:#444; transition:background .12s; }
+
+  /* Controller canvas */
+  .controller-main{ min-height:0; display:flex; align-items:center; justify-content:center; }
+  .controller-svg{ height:var(--controller-height); max-height:100%; width:auto; display:block; margin:0 auto; }
+
+  /* SVG styles */
+  .btn{ fill:transparent; stroke:#ffb25a; stroke-width:2; transition:fill .08s, stroke .08s, opacity .08s; }
+  .btn.active{ fill:var(--accent-strong); }
+  .dot{ fill:var(--accent-strong); filter:drop-shadow(0 0 4px var(--accent-strong)); }
+  .ringGlow{ fill:none; stroke:var(--accent-strong); stroke-width:3; stroke-dasharray:6 6; opacity:0; }
+  .ringGlow.active{ opacity:1; }
+  .dpad{ fill:transparent; stroke:#ffb25a; stroke-width:2; }
+  .dpad.active{ fill:var(--accent-strong); }
+  .ovbar-bg{ fill:#1a1a1a; stroke:#333; stroke-width:1.2; rx:5; ry:5; }
+  .ovbar-fill{ fill:url(#barGrad); }
+
+  /* Calibration mode (press C) */
+  .controller-svg .cal-target{ pointer-events:none; }
+  .controller-svg.cal .cal-target{ pointer-events:all; cursor:move; }
+  .cal-outline{ fill:none; stroke:#ffb25a88; stroke-width:1.5; stroke-dasharray:4 3; }
 </style>
 </head>
 <body>
@@ -175,28 +146,143 @@
 
 <!-- Center Column -->
 <div class="center-column">
-  <div class="camera">
-    <img id="camera-feed" src="http://localhost:8000/camera/stream" alt="Camera Feed">
+  <!-- Camera -->
+  <div class="camera-panel">
+    <div class="camera" id="camera-box">
+      <div class="camera-title">Camera</div>
+      <img id="camera-feed" src="http://localhost:8000/camera/stream" alt="Camera Feed" />
+    </div>
   </div>
 
   <div class="bottom-row">
-    <!-- Mode Box -->
-    <div class="mode-select">
-      <input type="radio" id="mode-pos" name="mode" value="positional" checked hidden>
-      <label for="mode-pos">Positional</label>
+    <!-- LEFT: Mode + Aux -->
+    <div class="left-stack">
+      <div class="mode-select">
+        <div class="quadrant-header"><span>Mode</span></div>
+        <div class="mode-grid">
+          <input type="radio" id="mode-pos" name="mode" value="positional" checked hidden />
+          <label for="mode-pos">Positional</label>
+          <input type="radio" id="mode-ang" name="mode" value="angular" hidden />
+          <label for="mode-ang">Angular</label>
+          <input type="radio" id="mode-walk" name="mode" value="walk" hidden />
+          <label for="mode-walk">Walk</label>
+          <input type="radio" id="mode-display" name="mode" value="display" hidden />
+          <label for="mode-display">Display</label>
+        </div>
+      </div>
 
-      <input type="radio" id="mode-ang" name="mode" value="angular" hidden>
-      <label for="mode-ang">Angular</label>
-
-      <input type="radio" id="mode-walk" name="mode" value="walk" hidden>
-      <label for="mode-walk">Walk</label>
-
-      <input type="radio" id="mode-display" name="mode" value="display" hidden>
-      <label for="mode-display">Display</label>
+      <div class="left-subpanel">
+        <div class="quadrant-header">Auxiliary</div>
+        <div class="content">
+          <ul>
+            <li>Battery: 87%</li>
+            <li>Temperature: -24.2°C</li>
+            <li>Network: 1.0 ms RTT</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <!-- Terminal -->
-    <div class="terminal" id="serial-console"></div>
+    <!-- Communications -->
+    <div class="terminal">
+      <div class="quadrant-header">
+        <span>Communications</span>
+        <div class="header-actions">
+          <button class="tab-btn active" id="btn-terminal" type="button" aria-pressed="true">Terminal</button>
+          <button class="tab-btn" id="btn-controller" type="button" aria-pressed="false">Controller</button>
+        </div>
+      </div>
+
+      <!-- Terminal -->
+      <div class="terminal-content" id="serial-console"></div>
+
+      <!-- Controller -->
+      <div class="terminal-content" id="controller-view" hidden>
+        <div class="controller-layout">
+          <!-- ORIGINAL full controls list (restored) -->
+          <div class="ctrl-side">
+            <h4>Controls</h4>
+            <ul>
+              <li><b>LS</b>: X/Y Position</li>
+              <li><b>RS</b>: Z Position</li>
+              <li><b>A</b>: Back Left Leg</li>
+              <li><b>B</b>: Back Right Leg</li>
+              <li><b>X</b>: Front Left Leg</li>
+              <li><b>Y</b>: Front Right Leg</li>
+              <li><b>LB</b>: Toggle Leg Mode</li>
+              <li><b>RB</b>: Toggle Body Mode</li>
+              <li><b>LT</b>: Retract Gripper</li>
+              <li><b>RT</b>: Actuate Gripper</li>
+              <li><b>D-Pad</b>: Mode Select</li>
+              <li><b>Start</b>: Initial Mode</li>
+              <li><b>Back</b>: Self-Destruct</li>
+            </ul>
+          </div>
+
+          <!-- Controller canvas -->
+          <div class="controller-main">
+            <svg viewBox="0 0 656 492" class="controller-svg" id="controller-svg"
+                 preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+                 xmlns:xlink="http://www.w3.org/1999/xlink" aria-label="Xbox controller">
+
+              <defs>
+                <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#ffa94d"/><stop offset="100%" stop-color="#ff7b00"/>
+                </linearGradient>
+              </defs>
+
+              <!-- bars above -->
+              <rect id="lt-bar-bg"   x="126" y="8"  width="140" height="10" class="ovbar-bg"/>
+              <rect id="lt-bar-fill" x="126" y="8"  width="0"   height="10" class="ovbar-fill"/>
+              <rect id="lb-bar-bg"   x="146" y="26" width="110" height="10" class="ovbar-bg"/>
+              <rect id="lb-bar-fill" x="146" y="26" width="0"   height="10" class="ovbar-fill"/>
+              <rect id="rt-bar-bg"   x="390" y="8"  width="140" height="10" class="ovbar-bg"/>
+              <rect id="rt-bar-fill" x="390" y="8"  width="0"   height="10" class="ovbar-fill"/>
+              <rect id="rb-bar-bg"   x="400" y="26" width="110" height="10" class="ovbar-bg"/>
+              <rect id="rb-bar-fill" x="400" y="26" width="0"   height="10" class="ovbar-fill"/>
+
+              <!-- controller body (image starts at y=44) -->
+              <g id="controller-body" transform="translate(0,44)">
+                <image x="0" y="0" width="656" height="448"
+                       href="/static/xboxone.png" xlink:href="/static/xboxone.png" />
+
+                <!-- Overlay group (absolute coords in body space; no CSS transforms) -->
+                <g id="overlay">
+                  <!-- logo -->
+                  <circle id="logo-dot" cx="327.24" cy="65.15" r="22" class="dot cal-target"/>
+
+                  <!-- sticks -->
+                  <circle id="ls-dot"      r="6" class="dot cal-target"/>
+                  <circle id="ls-ringGlow" r="44.5" class="ringGlow"/>
+                  <circle id="rs-dot"      r="6" class="dot cal-target"/>
+                  <circle id="rs-ringGlow" r="47.5" class="ringGlow"/>
+
+                  <!-- ABXY (same radius) -->
+                  <circle id="y" r="19" class="btn cal-target"/>
+                  <circle id="b" r="19" class="btn cal-target"/>
+                  <circle id="a" r="19" class="btn cal-target"/>
+                  <circle id="x" r="19" class="btn cal-target"/>
+
+                  <!-- View / Menu -->
+                  <circle id="back"  r="12" class="btn cal-target"/>
+                  <circle id="start" r="12" class="btn cal-target"/>
+
+                  <!-- D-Pad (positioned as a group by center) -->
+                  <g id="dpad-group" class="cal-target">
+                    <rect id="dup"    x="258" y="222" width="24" height="58" rx="5" class="dpad"/>
+                    <rect id="ddown"  x="258" y="280" width="24" height="58" rx="5" class="dpad"/>
+                    <rect id="dleft"  x="212" y="262" width="58" height="24" rx="5" class="dpad"/>
+                    <rect id="dright" x="270" y="262" width="58" height="24" rx="5" class="dpad"/>
+                    <!-- visual crosshair for calibration -->
+                    <circle id="dpad-center-guide" cx="270" cy="280" r="34" class="cal-outline" />
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div> <!-- /controller-view -->
+    </div>
   </div>
 </div>
 
@@ -207,9 +293,9 @@
 </div>
 
 <script>
-const quadrants = ["front-left","front-right","back-left","back-right"];
-
-function createQuadrantHTML(label) {
+/* ---------- Quadrants ---------- */
+const quadrants=["front-left","front-right","back-left","back-right"];
+function createQuadrantHTML(label){
   return `
     <div class="quadrant-header">
       ${label.replace("-", " ").toUpperCase()}
@@ -217,106 +303,308 @@ function createQuadrantHTML(label) {
     </div>
 
     <table class="limb-table">
+      <colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
       <thead><tr><th>Limb</th><th>Angle</th><th>Torque</th></tr></thead>
       <tbody>
-        <tr>
-          <td>Hip Yaw</td>
-          <td class="hip-yaw-angle">0</td>
-          <td><div class="torque-bar"><div class="torque-fill hip-yaw-torque"></div></div></td>
-        </tr>
-        <tr>
-          <td>Hip Pitch</td>
-          <td class="hip-pitch-angle">0</td>
-          <td><div class="torque-bar"><div class="torque-fill hip-pitch-torque"></div></div></td>
-        </tr>
-        <tr>
-          <td>Knee Pitch</td>
-          <td class="knee-pitch-angle">0</td>
-          <td><div class="torque-bar"><div class="torque-fill knee-pitch-torque"></div></div></td>
-        </tr>
+        <tr><td>Hip Yaw</td>   <td class="hip-yaw-angle num">0</td>   <td><div class="torque-bar hip-yaw-torque"><div class="torque-cover"></div></div></td></tr>
+        <tr><td>Hip Pitch</td> <td class="hip-pitch-angle num">0</td> <td><div class="torque-bar hip-pitch-torque"><div class="torque-cover"></div></div></td></tr>
+        <tr><td>Knee Pitch</td><td class="knee-pitch-angle num">0</td><td><div class="torque-bar knee-pitch-torque"><div class="torque-cover"></div></div></td></tr>
       </tbody>
     </table>
 
     <table class="sensor-table">
-      <thead><tr><th>Sensor</th><th>Force</th></tr></thead>
+      <colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+      <thead><tr><th>Sensor</th><th>Force</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td><span class="sensor-box s0"></span> <span class="s0-val">0.0 N</span></td></tr>
-        <tr><td>2</td><td><span class="sensor-box s1"></span> <span class="s1-val">0.0 N</span></td></tr>
-        <tr><td>3</td><td><span class="sensor-box s2"></span> <span class="s2-val">0.0 N</span></td></tr>
+        <tr><td>1</td><td class="num"><span class="s0-val">0.0 N</span></td><td><div class="status-bar"><div class="status-fill s0"></div></div></td></tr>
+        <tr><td>2</td><td class="num"><span class="s1-val">0.0 N</span></td><td><div class="status-bar"><div class="status-fill s1"></div></div></td></tr>
+        <tr><td>3</td><td class="num"><span class="s2-val">0.0 N</span></td><td><div class="status-bar"><div class="status-fill s2"></div></div></td></tr>
       </tbody>
     </table>
 
     <div class="overall-torque">
-      <div class="torque-bar"><div class="torque-fill overall-torque-fill"></div></div>
+      <span class="overall-label">End Effector Torque:</span>
+      <div class="torque-bar overall-torque-bar"><div class="torque-cover"></div></div>
     </div>
 
-
     <table class="pos-table">
+      <colgroup><col class="c1"><col class="c2"></colgroup>
+      <thead><tr><th>Dimension</th><th>Value</th></tr></thead>
       <tbody>
-        <tr><td>x Position = <span class="x">0.00 mm</span></td></tr>
-        <tr><td>y Position = <span class="y">0.00 mm</span></td></tr>
-        <tr><td>z Position = <span class="z">0.00 mm</span></td></tr>
+        <tr><td>X Position</td><td class="num"><span class="x">0.00 mm</span></td></tr>
+        <tr><td>Y Position</td><td class="num"><span class="y">0.00 mm</span></td></tr>
+        <tr><td>Z Position</td><td class="num"><span class="z">0.00 mm</span></td></tr>
       </tbody>
-    </table>
-  `;
+    </table>`;
 }
-
-quadrants.forEach(id => {
-  document.getElementById(id).innerHTML = createQuadrantHTML(id);
-});
+quadrants.forEach(id => { document.getElementById(id).innerHTML = createQuadrantHTML(id); });
 
 function setQuadrantLight(quadrantId, active) {
   const light = document.getElementById(`light-${quadrantId}`);
-  if(light) {
-    if(active) {
-      light.style.backgroundColor = "#00ff00";
-      light.style.boxShadow = "0 0 6px #00ff0077";
-    } else {
-      light.style.backgroundColor = "#333";
-      light.style.boxShadow = "0 0 3px #00ffcc33";
-    }
-  }
+  if (!light) return;
+  light.style.backgroundColor = active ? "#00ff00" : "#333";
+  light.style.boxShadow = active ? "0 0 10px #00ff00aa" : "0 0 5px #00ffcc33";
 }
 
-async function updateDashboard() {
-  try {
+async function updateDashboard(){
+  try{
     const res = await fetch("http://localhost:8000/data");
     const data = await res.json();
 
-    quadrants.forEach((id,i) => {
-      const card = document.getElementById(id);
+    quadrants.forEach((id,i)=>{
+      const card=document.getElementById(id);
 
-      card.querySelector(".hip-yaw-torque").style.width = `${Math.min(Math.abs(data.torques[i][0]),100)}%`;
-      card.querySelector(".hip-pitch-torque").style.width = `${Math.min(Math.abs(data.torques[i][1]),100)}%`;
-      card.querySelector(".knee-pitch-torque").style.width = `${Math.min(Math.abs(data.torques[i][2]),100)}%`;
+      // torque (use --p to reveal gradient proportionally to max range)
+      const hy=Math.min(Math.abs(data.torques[i][0]),100);
+      const hp=Math.min(Math.abs(data.torques[i][1]),100);
+      const kp=Math.min(Math.abs(data.torques[i][2]),100);
+      card.querySelector(".hip-yaw-torque").style.setProperty('--p', hy+'%');
+      card.querySelector(".hip-pitch-torque").style.setProperty('--p', hp+'%');
+      card.querySelector(".knee-pitch-torque").style.setProperty('--p', kp+'%');
 
-      card.querySelector(".hip-yaw-angle").textContent = data.positions[i][0].toFixed(1);
-      card.querySelector(".hip-pitch-angle").textContent = data.positions[i][1].toFixed(1);
+      // angles
+      card.querySelector(".hip-yaw-angle").textContent    = data.positions[i][0].toFixed(1);
+      card.querySelector(".hip-pitch-angle").textContent  = data.positions[i][1].toFixed(1);
       card.querySelector(".knee-pitch-angle").textContent = data.positions[i][2].toFixed(1);
 
-      card.querySelector(".x").textContent = data.positions[i][0].toFixed(2);
-      card.querySelector(".y").textContent = data.positions[i][1].toFixed(2);
-      card.querySelector(".z").textContent = data.positions[i][2].toFixed(2);
+      // positions
+      card.querySelector(".x").textContent = data.positions[i][0].toFixed(2) + " mm";
+      card.querySelector(".y").textContent = data.positions[i][1].toFixed(2) + " mm";
+      card.querySelector(".z").textContent = data.positions[i][2].toFixed(2) + " mm";
 
-      data.sensors[i].forEach((force,j) => {
-        const box = card.querySelector(`.s${j}`);
-        const val = card.querySelector(`.s${j}-val`);
-        val.textContent = force.toFixed(1) + " N";
-        box.style.backgroundColor = force > 3 ? "#00ffcc" : force > 1 ? "#ffaa00" : "#ff2222";
+      // sensors: orange active, grey off
+      data.sensors[i].forEach((force,j)=>{
+        card.querySelector(`.s${j}-val`).textContent = force.toFixed(1) + " N";
+        card.querySelector(`.status-fill.s${j}`).style.backgroundColor = (force>1) ? "#ff7b00" : "#444";
       });
 
+      // EE overall
       const overall = Math.max(...data.torques[i].map(t => Math.abs(t)));
-      card.querySelector(".overall-torque-fill").style.width = `${Math.min(overall*20,100)}%`;
+      card.querySelector(".overall-torque-bar").style.setProperty('--p', Math.min(overall,100)+'%');
     });
 
-    quadrants.forEach(id => setQuadrantLight(id, false));
-    if(data.activeQuadrant) setQuadrantLight(data.activeQuadrant, true);
+    quadrants.forEach(id => setQuadrantLight(id,false));
+    if(data.activeQuadrant) setQuadrantLight(data.activeQuadrant,true);
 
-    if(data.serial) document.getElementById("serial-console").textContent = data.serial.join("\n");
-  } catch(e) { console.error(e); }
+    if(data.serial){
+      const sc=document.getElementById("serial-console");
+      sc.textContent = data.serial.join("\n");
+      sc.scrollTop = sc.scrollHeight;
+    }
+  }catch(e){ console.error(e); }
+}
+setInterval(updateDashboard, 200);
+
+/* ---------- Tabs ---------- */
+const btnTerminal = document.getElementById('btn-terminal');
+const btnController = document.getElementById('btn-controller');
+const viewTerminal = document.getElementById('serial-console');
+const viewController = document.getElementById('controller-view');
+function setCommView(which){
+  const isTerm = (which === 'terminal');
+  viewTerminal.hidden = !isTerm;
+  viewController.hidden = isTerm;
+  btnTerminal.classList.toggle('active', isTerm);
+  btnController.classList.toggle('active', !isTerm);
+  btnTerminal.setAttribute('aria-pressed', String(isTerm));
+  btnController.setAttribute('aria-pressed', String(!isTerm));
+}
+btnTerminal.addEventListener('click',()=>setCommView('terminal'));
+btnController.addEventListener('click',()=>setCommView('controller'));
+setCommView('controller'); // default to Controller if you want; change to 'terminal' if not
+
+/* ---------- Controller overlay positions + calibration ---------- */
+const svg = document.getElementById('controller-svg');
+const overlay = svg.querySelector('#overlay');
+const dpadGroup = svg.querySelector('#dpad-group');
+
+const defaultCal = {
+  ls:    {cx:160.2, cy:127.8},
+  rs:    {cx:413.4, cy:228.6},
+  a:     {cx:492.6, cy:174.6},
+  b:     {cx:537.0, cy:130.2},
+  x:     {cx:450.6, cy:131.4},
+  y:     {cx:493.8, cy:87.0},
+  back:  {cx:279.0, cy:129.0},
+  start: {cx:375.0, cy:131.4},
+  dpad:  {cx:270.0, cy:280.0} // base center for the rectangles in dpad-group
+};
+let cal = JSON.parse(localStorage.getItem('ctrlCalV1')||'null') || structuredClone(defaultCal);
+
+function applyCal(){
+  const set = (id, p)=>{ const n = svg.querySelector('#'+id); n.setAttribute('cx', p.cx); n.setAttribute('cy', p.cy); };
+  set('ls-dot', cal.ls);  svg.querySelector('#ls-ringGlow').setAttribute('cx', cal.ls.cx); svg.querySelector('#ls-ringGlow').setAttribute('cy', cal.ls.cy);
+  set('rs-dot', cal.rs);  svg.querySelector('#rs-ringGlow').setAttribute('cx', cal.rs.cx); svg.querySelector('#rs-ringGlow').setAttribute('cy', cal.rs.cy);
+  set('a', cal.a); set('b', cal.b); set('x', cal.x); set('y', cal.y);
+  set('back', cal.back); set('start', cal.start);
+
+  // position D-pad group by its center (base center is 270,280)
+  const dx = cal.dpad.cx - 270, dy = cal.dpad.cy - 280;
+  dpadGroup.setAttribute('transform', `translate(${dx},${dy})`);
+}
+applyCal();
+
+function saveCal(){ localStorage.setItem('ctrlCalV1', JSON.stringify(cal)); }
+
+/* drag helpers (active only in calibration mode) */
+let dragging = null; let dragOrigin = null;
+function onDown(evt, key, type){
+  if(!svg.classList.contains('cal')) return;
+  dragging = { key, type };
+  dragOrigin = getMouse(evt);
+  evt.preventDefault();
+}
+function onMove(evt){
+  if(!dragging) return;
+  const p = getMouse(evt);
+  const dx = p.x - dragOrigin.x, dy = p.y - dragOrigin.y;
+  if(dragging.type === 'point'){
+    cal[dragging.key].cx += dx; cal[dragging.key].cy += dy;
+  }else if(dragging.type === 'dpad'){
+    cal.dpad.cx += dx; cal.dpad.cy += dy;
+  }
+  dragOrigin = p;
+  applyCal();
+}
+function onUp(){ if(dragging){ dragging=null; saveCal(); } }
+function getMouse(evt){
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  const ctm = svg.getScreenCTM().inverse();
+  const p = pt.matrixTransform(ctm);
+  return {x:p.x, y:p.y};
 }
 
-setInterval(updateDashboard, 200);
+/* bind drag targets */
+['ls','rs','a','b','x','y','back','start'].forEach(key=>{
+  const el = svg.querySelector('#'+(key==='ls'||key==='rs'? key+'-dot' : key));
+  el.addEventListener('pointerdown', e=>onDown(e,key,'point'));
+});
+dpadGroup.addEventListener('pointerdown', e=>onDown(e,'dpad','dpad'));
+window.addEventListener('pointermove', onMove);
+window.addEventListener('pointerup', onUp);
+
+/* toggle calibration: C to toggle, Shift+C to reset */
+window.addEventListener('keydown', (e)=>{
+  if(e.key.toLowerCase()==='c' && !e.shiftKey){
+    svg.classList.toggle('cal');
+  }else if(e.key.toLowerCase()==='c' && e.shiftKey){
+    localStorage.removeItem('ctrlCalV1'); cal = structuredClone(defaultCal); applyCal();
+  }
+});
+
+/* ---------- Gamepad mapping ---------- */
+const $ = id => document.getElementById(id);
+const els = {
+  lsDot: $('ls-dot'), rsDot: $('rs-dot'),
+  lsGlow: $('ls-ringGlow'), rsGlow: $('rs-ringGlow'),
+  a:$('a'), b:$('b'), x:$('x'), y:$('y'),
+  back:$('back'), start:$('start'),
+  dup:$('dup'), ddown:$('ddown'), dleft:$('dleft'), dright:$('dright'),
+  ltFillSvg: $('lt-bar-fill'), rtFillSvg: $('rt-bar-fill'),
+  lbFillSvg: $('lb-bar-fill'), rbFillSvg: $('rb-bar-fill'),
+  ltBg: $('lt-bar-bg'), rtBg: $('rt-bar-bg'),
+  lbBg: $('lb-bar-bg'), rbBg: $('rb-bar-bg')
+};
+const base = {
+  lt: parseFloat(els.ltBg.getAttribute('width')) || 140,
+  rt: parseFloat(els.rtBg.getAttribute('width')) || 140,
+  lb: parseFloat(els.lbBg.getAttribute('width')) || 110,
+  rb: parseFloat(els.rbBg.getAttribute('width')) || 110
+};
+
+let gamepadIndex = null, rafId = null;
+const DZ=0.08, dz=v=>(Math.abs(v)<DZ?0:v);
+function moveStick(dot,cx,cy,x,y,r){
+  dot.setAttribute('cx', (cx + x*r).toFixed(1));
+  dot.setAttribute('cy', (cy - y*r).toFixed(1));
+}
+function setActive(el,on){ el && el.classList.toggle('active', !!on); }
+function setRectWidth(rectEl, value01, maxWidth){
+  const v = Math.max(0, Math.min(1, value01||0));
+  rectEl.setAttribute('width', (v*maxWidth).toFixed(1));
+}
+function frame(){
+  const gp=(navigator.getGamepads?.()||[])[gamepadIndex];
+  if(!gp || !gp.connected){ cancelAnimationFrame(rafId); rafId=null; gamepadIndex=null; return; }
+  const ax=gp.axes||[], bt=gp.buttons||[];
+
+  moveStick(els.lsDot, cal.ls.cx, cal.ls.cy, dz(ax[0]||0), dz(ax[1]||0), 32);
+  moveStick(els.rsDot, cal.rs.cx, cal.rs.cy, dz(ax[2]||0), dz(ax[3]||0), 34);
+
+  els.lsGlow.setAttribute('cx', cal.ls.cx); els.lsGlow.setAttribute('cy', cal.ls.cy);
+  els.rsGlow.setAttribute('cx', cal.rs.cx); els.rsGlow.setAttribute('cy', cal.rs.cy);
+  els.lsGlow.classList.toggle('active', !!bt[10]?.pressed);
+  els.rsGlow.classList.toggle('active', !!bt[11]?.pressed);
+
+  setActive(els.a, bt[0]?.pressed);  setActive(els.b, bt[1]?.pressed);
+  setActive(els.x, bt[2]?.pressed);  setActive(els.y, bt[3]?.pressed);
+
+  setActive(els.back,  bt[8]?.pressed);
+  setActive(els.start, bt[9]?.pressed);
+
+  setActive(els.dup, bt[12]?.pressed);   setActive(els.ddown, bt[13]?.pressed);
+  setActive(els.dleft, bt[14]?.pressed); setActive(els.dright, bt[15]?.pressed);
+
+  const lb = bt[4] ? (bt[4].pressed || bt[4].value>0.5) : false;
+  const rb = bt[5] ? (bt[5].pressed || bt[5].value>0.5) : false;
+  setRectWidth(els.lbFillSvg, lb ? 1 : 0, base.lb);
+  setRectWidth(els.rbFillSvg, rb ? 1 : 0, base.rb);
+
+  setRectWidth(els.ltFillSvg, bt[6]?.value ?? 0, base.lt);
+  setRectWidth(els.rtFillSvg, bt[7]?.value ?? 0, base.rt);
+
+  rafId=requestAnimationFrame(frame);
+}
+function startIfAvailable(){
+  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : [];
+  for(const p of pads){ if(p.connected){ gamepadIndex=p.index; break; } }
+  if(gamepadIndex!=null && !rafId) rafId=requestAnimationFrame(frame);
+}
+window.addEventListener('gamepadconnected', e=>{ gamepadIndex=e.gamepad.index; if(!rafId) rafId=requestAnimationFrame(frame); });
+window.addEventListener('gamepaddisconnected', ()=>{ cancelAnimationFrame(rafId); rafId=null; gamepadIndex=null; });
+startIfAvailable();
+
+/* ---------- Camera AR ---------- */
+(function initCameraAspect(){
+  const img = document.getElementById('camera-feed');
+  const box = document.getElementById('camera-box');
+  function applyAR(){
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if(w && h){ box.style.setProperty('--cam-ar', `${w} / ${h}`); img.removeEventListener('load', applyAR); }
+  }
+  if (img.complete) applyAR();
+  img.addEventListener('load', applyAR);
+  setTimeout(applyAR, 800);
+})();
+
+/* ---------- Fake terminal logs ---------- */
+(function startFakeLogs(){
+  const sc = document.getElementById('serial-console');
+  const maxLines = 400;
+  function pad(n, s=2){ return String(n).padStart(s,'0'); }
+  function ts(){
+    const d=new Date();
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3,'0')}`;
+  }
+  const msgs = [
+    ()=>`NAV: Locked on asteroid α-${Math.floor(Math.random()*900+100)} | range=${(Math.random()*2+0.3).toFixed(2)}km | closing=${(Math.random()*12+1).toFixed(1)}m/s`,
+    ()=>`THRUST: Δv command ${(Math.random()*0.8+0.1).toFixed(2)} m/s | fuel=${(Math.random()*5+94).toFixed(1)}%`,
+    ()=>`ARM: Grapple motor torque ${(Math.random()*42+8).toFixed(1)} Nm | temp=${(Math.random()*15+35).toFixed(1)}°C`,
+    ()=>`IMU: roll=${(Math.random()*6-3).toFixed(2)}° pitch=${(Math.random()*6-3).toFixed(2)}° yaw=${(Math.random()*6-3).toFixed(2)}°`,
+    ()=>`COMM: downlink ${(Math.random()*5+2).toFixed(2)} Mbps | uplink ${(Math.random()*2+0.5).toFixed(2)} Mbps | RTT ${(Math.random()*12+1).toFixed(1)} ms`,
+    ()=>`WARN: micro-debris detected @ ${(Math.random()*50+10).toFixed(1)}m — evasive pattern ${['A','B','C'][Math.floor(Math.random()*3)]}`
+  ];
+  function tick(){
+    if (!sc || !sc.isConnected) return;
+    const line = `[${ts()}] ${msgs[Math.floor(Math.random()*msgs.length)]()}`;
+    sc.textContent += (sc.textContent ? '\n' : '') + line;
+    const arr = sc.textContent.split('\n');
+    if(arr.length > maxLines) sc.textContent = arr.slice(-maxLines).join('\n');
+    sc.scrollTop = sc.scrollHeight;
+  }
+  setInterval(tick, 1000);
+})();
 </script>
 </body>
 </html>
