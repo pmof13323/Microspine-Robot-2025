@@ -103,6 +103,11 @@ void loop(){
 
     if(!DEBUG_SERIAL.available()) return;
 
+    dxlInterface.readDXLData(); // refresh arrays
+
+    String dataLine = dxlInterface.getReadData();
+    DEBUG_SERIAL.println(dataLine);
+
     String line = readLine();
     if(line.length() == 0) return;
 

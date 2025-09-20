@@ -8,9 +8,16 @@ from fastapi.responses import FileResponse, StreamingResponse
 from PIL import Image
 from io import BytesIO
 import cv2
+import json
+import os
+import numpy as np
+from PIL import Image
+from io import BytesIO
+import time
 
 
 app = FastAPI()
+OPENRB_STATE_FILE = "openrb_state.json"
 
 # Mount 'static' directory to '/static' URL path
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -32,14 +39,48 @@ def getSensors():
     return np.random.uniform(0, 5, (4, 3))
 
 def getTorque():
-    # 4 legs × 3 joints (yaw, hip, knee)
-    return np.random.uniform(0, 100, (4, 3))
+    return np.random.uniform(0, 100, 4)
 
 def getEEPos():
     return np.random.uniform(-350, 350, (4, 3))
 
 @app.get("/data")
 def get_robot_data():
+    """
+    Return grouped data for frontend:
+    torques[i][j] => quadrant i, motor j
+    positions[i][j] => quadrant i, motor j
+    """
+    loads, vels, positions = [], [], []
+
+    if os.path.exists(OPENRB_STATE_FILE):
+        try:
+            with open(OPENRB_STATE_FILE, "r") as f:
+                openrb_state = json.load(f)
+            # sort keys numerically
+            motor_keys = sorted(openrb_state.keys(), key=int)
+            for k in motor_keys:
+                motor = openrb_state[k]
+                loads.append(motor.get("load", 0))
+                vels.append(motor.get("vel", 0))
+                positions.append(motor.get("pos", 0))
+        except json.JSONDecodeError:
+            loads, vels, positions = [], [], []
+
+    # Now group them into 4 quadrants x 3 motors (hip yaw, hip pitch, knee pitch)
+    torques_grouped = []
+    positions_grouped = []
+    quadrant_count = 4
+    motors_per_quadrant = 3
+    for q in range(quadrant_count):
+        start = q * motors_per_quadrant
+        end = start + motors_per_quadrant
+        torques_grouped.append(loads[start:end] if start < len(loads) else [0]*motors_per_quadrant)
+        positions_grouped.append(positions[start:end] if start < len(positions) else [0]*motors_per_quadrant)
+
+    # sensors
+    sensors = getSensors()
+
     return {
         "sensors":   getSensors().tolist(),   # (4,3)
         "torques":   getTorque().tolist(),    # (4,3)  <-- now matches FE

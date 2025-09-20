@@ -13,19 +13,30 @@ import numpy as np
 import time
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sensor_read import SensorArray
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+import numpy as np
+from sensor_loop import SensorBackgroundReader  # <-- import your loop class
 
 app = FastAPI()
-
-# Mount 'static' directory to '/static' URL path
 app.mount("/static", StaticFiles(directory="static"), name="static")
+OPENRB_STATE_FILE = "openrb_state.json"
+
+# Start background sensor reading
+sensor_reader = SensorBackgroundReader()
+sensor_reader.start()
 
 @app.get("/")
 async def root():
     return FileResponse("static/frontend.html")
 
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all origins for testing
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,19 +46,43 @@ app.add_middleware(
 def getSensors():
     return np.random.uniform(0, 5, (4, 3))
 
-def getTorque():
-    return np.random.uniform(0, 100, 4)
-
 def getEEPos():
     return np.random.uniform(-350, 350, (4, 3))
 
 @app.get("/data")
 def get_robot_data():
+    """
+    Serve the latest OpenRB motor states (separated lists for load, velocity, position)
+    along with sensor data and timestamp.
+    """
+    # --- Sensor data ---
+    sensor_data = sensor_reader.get_data()
+    sensors = sensor_data["sensors"] if sensor_data else []
+    timestamp = sensor_data["timestamp"] if sensor_data else None
+
+    # --- OpenRB motor state ---
+    loads, vels, positions = [], [], []
+    if os.path.exists(OPENRB_STATE_FILE):
+        try:
+            with open(OPENRB_STATE_FILE, "r") as f:
+                openrb_state = json.load(f)
+            # Separate values into lists
+            for motor_id in sorted(openrb_state.keys(), key=int):
+                motor = openrb_state[motor_id]
+                loads.append(motor.get("load", 0))
+                vels.append(motor.get("vel", 0))
+                positions.append(motor.get("pos", 0))
+        except json.JSONDecodeError:
+            loads, vels, positions = [], [], []
+
     return {
-        "sensors": getSensors().tolist(),
-        "torques": getTorque().tolist(),
-        "positions": getEEPos().tolist()
+        "sensors": sensors,
+        "loads": loads,
+        "velocities": vels,
+        "positions": positions,
+        "timestamp": timestamp
     }
+
 
 # Configure camera once
 picam2 = Picamera2()

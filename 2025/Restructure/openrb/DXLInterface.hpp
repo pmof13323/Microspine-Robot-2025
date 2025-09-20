@@ -113,6 +113,7 @@ public:
     // Bulk RW Methods
     int readDXLData();
     int writeDXLData();
+    String getReadData();
 
     const char* opModeName(int8_t mode);
     void printMotorOpMode(uint8_t motorID);
