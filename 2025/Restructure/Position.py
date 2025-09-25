@@ -161,6 +161,22 @@ class PosGait:
 
         self.Pw = self.last_valid[1]["Pw"].copy() if self.last_valid[1]["Pw"] is not None else np.array([self.radius_hp+150.0,0.0,-200.0],float)
 
+
+    def get_all_leg_positions(self):
+        """
+        Return a dictionary with the latest x, y, z positions (in mm)
+        for all legs (1–4). If a leg has no valid position, returns None for it.
+        """
+        positions = {}
+        for i in (1, 2, 3, 4):
+            Pw = self.last_valid[i]["Pw"]
+            if Pw is not None:
+                positions[i] = dict(x=float(Pw[0]), y=float(Pw[1]), z=float(Pw[2]))
+            else:
+                positions[i] = None
+        return positions
+
+
     def _solve_leg_for_world_target(self, leg:int, Pw_world:np.ndarray):
         """Return (sol, feasible_bool) for a given leg and world foot contact Pw_world."""
         p_leg = world_to_leg_yaw_frame(Pw_world, leg, self.radius_hp, self.o_local)
@@ -314,3 +330,5 @@ class PosGait:
             self.rb.send_sync_positions(sync_targets)
             print(f"+-------------------------------------------------------+")
             time.sleep(0.001)  # reduce serial spam but keep fast loop
+            return (self.get_all_leg_positions())
+

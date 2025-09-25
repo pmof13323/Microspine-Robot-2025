@@ -45,7 +45,7 @@ class OpenRB:
         self.ser.write(line.encode())
         print("[SYNC SEND]", line.strip())
 
-    def read_data(self):
+    def read_data(self, coord):
         line = "READ " + "\n"
         self.ser.write(line.encode())
 
@@ -74,26 +74,21 @@ class OpenRB:
                     "vel": float(parts[3])
                 }
 
-            # Send to connected client over socket
-            self.conn.sendall((json.dumps(data) + "\n").encode())
-            
+            # Build combined data AFTER parsing all motors
+            combined_data = {
+                "motors": data,
+                "legs": coord
+            }
+
+            # Send to connected client
+            self.conn.sendall((json.dumps(combined_data) + "\n").encode())
+
             return data
 
         except Exception as e:
             print(f"[OpenRB] Parse error: {e}, line={line}")
             return None
 
-    def transmit_data(self):
-        """Read serial and immediately send data over socket (main loop)."""
-        data = self.read_data()
-        if data:
-            try:
-                msg = json.dumps(data).encode() + b"\n"
-                self.conn.sendall(msg)
-            except (BrokenPipeError, ConnectionResetError):
-                print("[OpenRB] Client disconnected")
-                return False
-        return True
     
     def transmit_mode(self,int):
         line = ("mode"+ str(int) + "\n").encode()

@@ -20,9 +20,9 @@ if __name__ == "__main__":
             selector.select_gait_by_button(dir)
         
             # Run current gait
-            selector.current_gait.step()
+            coord=selector.current_gait.step()
 
-            openrb.read_data()
+            openrb.read_data(coord)
             
     except KeyboardInterrupt:
         print("\nExiting...")

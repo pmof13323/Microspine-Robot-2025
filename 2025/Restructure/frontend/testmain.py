@@ -179,7 +179,7 @@ def get_robot_data():
 
         torques_grouped.append(limb_torques)
 
-        # Positions remain 3 per limb
+        # Positions (angles) remain 3 per limb
         limb_positions = positions[start:end] if end <= len(positions) else [0] * motors_per_quadrant
         positions_grouped.append(limb_positions)
 
