@@ -8,6 +8,12 @@
     --controller-height: 85%;
     --col1: 36%;  --col2: 24%;  --col3: 40%;
     --panel-bg:#111; --panel-br:#333; --accent:#ff8800; --accent-strong:#ff7b00;
+
+    /* Quadrant light colors */
+    --quad-on: #f2f2f5;         /* whitish active fill */
+    --quad-on-glow: #ffffffcc;  /* soft white glow */
+    --quad-off: #333;           /* inactive fill */
+    --quad-off-glow: #00ffcc33; /* subtle inactive glow */
   }
 
   html { box-sizing: border-box; }
@@ -102,7 +108,18 @@
   .quadrant{ background:var(--panel-bg); border:2px solid var(--panel-br); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; font-size:1.3em; min-height:0; overflow:hidden; }
   #front-left .quadrant-header, #back-left .quadrant-header{ justify-content:space-between; flex-direction:row; }
   #front-right .quadrant-header, #back-right .quadrant-header{ justify-content:space-between; flex-direction:row-reverse; }
-  .quadrant-light{ width:40px; height:40px; border-radius:50%; background:#333; border:2px solid #ff8000; box-shadow:0 0 5px #43454533; transition:background .2s, box-shadow .2s; }
+  .quadrant-light{
+    width:40px; height:40px; border-radius:50%;
+    background: var(--quad-off);
+    border:2px solid var(--accent);
+    box-shadow: 0 0 5px var(--quad-off-glow);
+    transition: background .2s, box-shadow .2s, border-color .2s;
+  }
+  .quadrant-light.on{
+    background: var(--quad-on);
+    box-shadow: 0 0 10px var(--quad-on-glow);
+    border-color: var(--quad-on);
+  }
 
   /* Tables */
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
@@ -346,11 +363,11 @@ function createQuadrantHTML(label){
 }
 quadrants.forEach(id => { document.getElementById(id).innerHTML = createQuadrantHTML(id); });
 
+/* Use class toggling instead of inline colors */
 function setQuadrantLight(quadrantId, active) {
   const light = document.getElementById(`light-${quadrantId}`);
   if (!light) return;
-  light.style.backgroundColor = active ? "#00ff00" : "#333";
-  light.style.boxShadow = active ? "0 0 10px #00ff00aa" : "0 0 5px #00ffcc33";
+  light.classList.toggle('on', !!active);
 }
 function setAllQuadrantLights(on){
   quadrants.forEach(id => setQuadrantLight(id, !!on));
@@ -385,8 +402,7 @@ function setModeByCode(code){
   labels.forEach(lab => lab.classList.remove('active'));
 
   if (code === 0 || !(code in MODE_CODE_TO_INPUT_ID)) {
-    // None highlighted: leave radios unchecked and labels inactive
-    return;
+    return; // none highlighted
   }
   const targetId = MODE_CODE_TO_INPUT_ID[code];
   const inp = document.getElementById(targetId);
@@ -430,20 +446,18 @@ async function updateDashboard(){
       card.querySelector(".overall-torque-bar").style.setProperty('--p', EE+'%');
     });
 
-    // ----- Quadrant selection from backend -----
-    // Preferred integer: 0=all on; 1=FR; 2=BR; 3=BL; 4=FL
+    // Quadrant selection
     if (Number.isInteger(data.activeQuadrantIndex)) {
-      setQuadrantByIndex(data.activeQuadrantIndex);
+      setQuadrantByIndex(data.activeQuadrantIndex); // 0=all on
     } else {
       // Backward-compat: string id (e.g., "front-left")
       setAllQuadrantLights(false);
       if (data.activeQuadrant) setQuadrantLight(data.activeQuadrant, true);
     }
 
-    // ----- Mode highlight from backend -----
-    // 0=none, 1=positional, 2=angular, 3=walk, 4=display
+    // Mode highlight
     if (typeof data.modeCode === 'number') {
-      setModeByCode(data.modeCode);
+      setModeByCode(data.modeCode); // 0..4
     }
 
     if(data.serial){
