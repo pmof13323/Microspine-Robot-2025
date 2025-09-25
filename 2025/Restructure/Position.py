@@ -204,6 +204,7 @@ class PosGait:
             if self.mode != 'body':
                 self.mode = 'body'
                 self._capture_body_anchors()
+                self.rb.transmit_leg(0)
                 print("👉 Body movement mode (feet anchored)")
         elif self.controller.is_pressed("Left_bumper"):
             if self.mode != 'leg':
@@ -216,6 +217,7 @@ class PosGait:
             elif self.controller.is_pressed("Y"): self.leg = 1
             elif self.controller.is_pressed("B"): self.leg = 2
             elif self.controller.is_pressed("A"): self.leg = 3
+            self.rb.transmit_leg(self.leg)
 
             if self.last_valid[self.leg]["Pw"] is not None:
                 self.Pw = self.last_valid[self.leg]["Pw"].copy()

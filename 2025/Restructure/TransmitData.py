@@ -75,8 +75,8 @@ class OpenRB:
                 }
 
             # Send to connected client over socket
-            self.conn.sendall((json.dumps(data) + "\n").encode())       
-            print(data)
+            self.conn.sendall((json.dumps(data) + "\n").encode())
+            
             return data
 
         except Exception as e:
@@ -94,6 +94,15 @@ class OpenRB:
                 print("[OpenRB] Client disconnected")
                 return False
         return True
+    
+    def transmit_mode(self,int):
+        line = ("mode"+ str(int) + "\n").encode()
+        self.conn.sendall(line)
+    
+    def transmit_leg(self,int):
+        line = ("leg"+ str(int) + "\n").encode()
+        self.conn.sendall(line)
+
 
     def close(self):
         if self.ser and self.ser.is_open:

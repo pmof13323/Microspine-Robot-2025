@@ -1,7 +1,8 @@
 class ModeSelector:
-    def __init__(self, gaits):
+    def __init__(self, gaits,rb):
         self.gaits = gaits
         self.current_index = 0
+        self.rb = rb
 
         # Map buttons to gait indices
         # Example: numpad up = 0, left = 1, right = 2
@@ -22,4 +23,5 @@ class ModeSelector:
             idx = self.button_map[button_name]
             if idx != self.current_index:
                 self.current_index = idx
+                self.rb.transmit_mode(idx)
                 print(f"👉 Switched to gait: {self.current_gait.name}")
