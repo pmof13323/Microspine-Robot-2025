@@ -311,4 +311,4 @@ class PosGait:
             print(f"+----------+--------------------------------------------+")
             self.rb.send_sync_positions(sync_targets)
             print(f"+-------------------------------------------------------+")
-            time.sleep(0.03)  # reduce serial spam but keep fast loop
+            time.sleep(0.001)  # reduce serial spam but keep fast loop

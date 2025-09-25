@@ -32,9 +32,9 @@ const uint16_t SW_POS_START_ADDR = 116; //goal postion
 const uint16_t SW_ADDR_LEN = 4;
 
 typedef struct SyncReadDataStruct {
-    int16_t present_load;
-    int32_t present_velocity;
+    int16_t present_current;
     int32_t present_position;
+    int32_t present_velocity;
 } __attribute__((packed)) SyncReadData_t;
 
 typedef struct {

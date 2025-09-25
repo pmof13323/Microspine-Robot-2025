@@ -2,13 +2,13 @@
 #define CONFIG_H
 
 // Number of Dynamixels
-#define NUM_DXLs 1
+#define NUM_DXLs 16
 
 // Serial port and direction pin
 #define DXL_SERIAL Serial1
 
 // Debugging
-#define DEBUG 1
+#define DEBUG 0
 
 // Max velocity and acceleration constants
 #define V_MAX 80      // adjust based on your Dynamixel model

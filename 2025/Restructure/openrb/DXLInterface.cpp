@@ -309,7 +309,7 @@ int DXLInterface::readDXLData() {
                 Serial.print("  ID: ");
                 Serial.print(ID);
                 Serial.print(":");
-                Serial.print(SyncRead_data[i].present_load);
+                Serial.print(SyncRead_data[i].present_current);
                 Serial.print(":");
                 Serial.print(SyncRead_data[i].present_velocity);
                 Serial.print(":");
@@ -320,7 +320,7 @@ int DXLInterface::readDXLData() {
                 if (ID == IDs[j]) {
                     // Populate arrays
                     // TODO: Do we need to do this here? or save it for lookups?
-                    loads[j] = SyncRead_data[i].present_load;
+                    loads[j] = SyncRead_data[i].present_current;
                     velocities[j] = SyncRead_data[i].present_velocity;
                     positions[j] = SyncRead_data[i].present_position;
                 }

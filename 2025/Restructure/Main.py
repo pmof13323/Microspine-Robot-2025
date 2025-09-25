@@ -21,7 +21,9 @@ if __name__ == "__main__":
         
             # Run current gait
             selector.current_gait.step()
+
             openrb.read_data()
+            
     except KeyboardInterrupt:
         print("\nExiting...")
     finally:

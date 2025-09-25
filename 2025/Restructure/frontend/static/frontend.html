@@ -355,9 +355,9 @@ async function updateDashboard(){
       const card=document.getElementById(id);
 
       // torque (use --p to reveal gradient proportionally to max range)
-      const hy=Math.min(Math.abs(data.torques[i][0]),100);
-      const hp=Math.min(Math.abs(data.torques[i][1]),100);
-      const kp=Math.min(Math.abs(data.torques[i][2]),100);
+      const hy=(Math.abs(data.torques[i][0]));
+      const hp=(Math.abs(data.torques[i][1]));
+      const kp=(Math.abs(data.torques[i][2]));
       card.querySelector(".hip-yaw-torque").style.setProperty('--p', hy+'%');
       card.querySelector(".hip-pitch-torque").style.setProperty('--p', hp+'%');
       card.querySelector(".knee-pitch-torque").style.setProperty('--p', kp+'%');
@@ -379,8 +379,8 @@ async function updateDashboard(){
       });
 
       // EE overall
-      const overall = Math.max(...data.torques[i].map(t => Math.abs(t)));
-      card.querySelector(".overall-torque-bar").style.setProperty('--p', Math.min(overall,100)+'%');
+      const EE = (Math.abs(data.torques[i][3]));
+      card.querySelector(".overall-torque-bar").style.setProperty('--p', EE+'%');
     });
 
     quadrants.forEach(id => setQuadrantLight(id,false));

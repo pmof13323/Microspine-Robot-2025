@@ -1,21 +1,36 @@
 import serial, time, sys, json
+import socket
+import threading
+import time
+import serial
+import sys
+
 
 STATE_FILE = "frontend/openrb_state.json"
 
 class OpenRB:
-    def __init__(self, port=None, baud=115200):
-        # Default port per OS
-        if port is None:
+    def __init__(self, host="127.0.0.1", port=5000, serial_port=None, baud=57600):
+        # Serial setup
+        if serial_port is None:
             if sys.platform.startswith("win"):
-                port = "COM3"
+                serial_port = "COM4"
             elif sys.platform.startswith("linux"):
-                port = "/dev/ttyUSB0"
-            elif sys.platform.startswith("darwin"):  # macOS
-                port = "/dev/tty.usbmodem21101"
+                serial_port = "/dev/ttyUSB0"
+            elif sys.platform.startswith("darwin"):
+                serial_port = "/dev/tty.usbmodem21101"
 
-        self.ser = serial.Serial(port, baud, timeout=0.1)
-        time.sleep(2.0)  # let board enumerate
-        print(f"[OpenRB] Connected on {port} at {baud} baud")
+        self.ser = serial.Serial(serial_port, baud, timeout=0.1)
+        time.sleep(2.0)
+        print(f"[OpenRB] Connected on {serial_port} at {baud} baud")
+
+        # TCP socket setup
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind((host, port))
+        self.sock.listen(1)
+        print(f"[OpenRB] Waiting for client on {host}:{port}")
+
+        self.conn, addr = self.sock.accept()
+        print(f"[OpenRB] Client connected from {addr}")
 
     def send_sync_positions(self, id_pos_pairs):
         """
@@ -31,6 +46,9 @@ class OpenRB:
         print("[SYNC SEND]", line.strip())
 
     def read_data(self):
+        line = "READ " + "\n"
+        self.ser.write(line.encode())
+
         if not self.ser.in_waiting:
             return None
 
@@ -40,35 +58,42 @@ class OpenRB:
             return None
 
         try:
-            payload = line[5:]  # strip "READ "
-            motors = payload.split(";")  # split multiple motors
-
+            payload = line[5:]
+            motors = payload.split(";")
             data = {}
             for motor in motors:
                 if not motor:
                     continue
                 parts = motor.split(",")
                 if len(parts) != 4:
-                    continue  # skip malformed entries
+                    continue
                 motor_id = int(parts[0])
                 data[motor_id] = {
                     "load": float(parts[1]),
-                    "vel": float(parts[2]),
-                    "pos": float(parts[3])
+                    "pos": float(parts[2]),
+                    "vel": float(parts[3])
                 }
 
-            # print for debugging
-            #print("[OpenRB] Read data:", data)
-
-            # write to JSON
-            with open(STATE_FILE, "w") as f:
-                json.dump(data, f)
-
+            # Send to connected client over socket
+            self.conn.sendall((json.dumps(data) + "\n").encode())       
+            print(data)
             return data
 
         except Exception as e:
             print(f"[OpenRB] Parse error: {e}, line={line}")
             return None
+
+    def transmit_data(self):
+        """Read serial and immediately send data over socket (main loop)."""
+        data = self.read_data()
+        if data:
+            try:
+                msg = json.dumps(data).encode() + b"\n"
+                self.conn.sendall(msg)
+            except (BrokenPipeError, ConnectionResetError):
+                print("[OpenRB] Client disconnected")
+                return False
+        return True
 
     def close(self):
         if self.ser and self.ser.is_open:

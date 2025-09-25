@@ -103,11 +103,6 @@ void loop(){
 
     if(!DEBUG_SERIAL.available()) return;
 
-    dxlInterface.readDXLData(); // refresh arrays
-
-    String dataLine = dxlInterface.getReadData();
-    DEBUG_SERIAL.println(dataLine);
-
     String line = readLine();
     if(line.length() == 0) return;
 
@@ -117,7 +112,7 @@ void loop(){
 
     String tok[128];  // large enough for SYNC 16 motors
     int n = tokenize(line, tok, 32);
-    if(n < 2) return;
+    if(n < 1) return;
 
     tok[0].toLowerCase();
 
@@ -148,5 +143,12 @@ void loop(){
             
         }
         dxlInterface.writeDXLData();  // send all at once
+
+    } else if(tok[0] == "read"){  // multi-motor read command
+        dxlInterface.readDXLData(); // refresh arrays
+
+        String dataLine = dxlInterface.getReadData();
+        DEBUG_SERIAL.println(dataLine);   
     }
+
 }
