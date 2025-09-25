@@ -25,14 +25,14 @@ const uint16_t BUF_SIZE = 256;
 // DYNAMIXEL::InfoBulkWriteInst_t bulk_write_info;
 // DYNAMIXEL::XELInfoBulkWrite_t bulk_write_data[NUM_DXLS];
 
-const uint16_t SR_START_ADDR = 126;     // Present Load
+const uint16_t SR_START_ADDR = 126;     // Present current
 const uint16_t SR_ADDR_LEN = 2 + 4 + 4; // Load + Vel + Pos
 const uint16_t SW_VEL_START_ADDR = 104; // goal velocity
 const uint16_t SW_POS_START_ADDR = 116; //goal postion
 const uint16_t SW_ADDR_LEN = 4;
 
 typedef struct SyncReadDataStruct {
-    int16_t present_current;
+    int16_t PRESENT_CURRENT;
     int32_t present_position;
     int32_t present_velocity;
 } __attribute__((packed)) SyncReadData_t;
