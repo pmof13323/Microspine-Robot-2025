@@ -60,7 +60,13 @@
     cursor:pointer; padding:8px 12px; border-radius:6px; background:#222; border:1px solid var(--panel-br); transition:background .2s, border .2s;
     font-size:1em; text-align:center;
   }
-  .mode-grid input[type=radio]:checked + label{ background:var(--accent-strong); color:#000; border-color:#363531; }
+  /* allow radios OR manual .active to highlight */
+  .mode-grid input[type=radio]:checked + label,
+  .mode-grid label.mode-label.active{
+    background:var(--accent-strong);
+    color:#000;
+    border-color:#363531;
+  }
 
   .left-subpanel{
     background:var(--panel-bg); border:2px solid var(--panel-br); border-radius:8px;
@@ -127,7 +133,8 @@
   .ringGlow.active{ opacity:1; }
   .dpad{ fill:transparent; stroke:#ffb25a; stroke-width:2; }
   .dpad.active{ fill:var(--accent-strong); }
-  .ovbar-bg{ fill:#1a1a1a; stroke:#333; stroke-width:1.2; rx:5; ry:5; }
+  /* removed rx/ry from CSS (they're SVG attributes) */
+  .ovbar-bg{ fill:#1a1a1a; stroke:#333; stroke-width:1.2; }
   .ovbar-fill{ fill:url(#barGrad); }
 
   /* Calibration mode (press C) */
@@ -160,14 +167,14 @@
       <div class="mode-select">
         <div class="quadrant-header"><span>Mode</span></div>
         <div class="mode-grid">
-          <input type="radio" id="mode-pos" name="mode" value="positional" checked hidden />
-          <label for="mode-pos">Positional</label>
+          <input type="radio" id="mode-pos" name="mode" value="positional" hidden />
+          <label for="mode-pos" class="mode-label">Positional</label>
           <input type="radio" id="mode-ang" name="mode" value="angular" hidden />
-          <label for="mode-ang">Angular</label>
+          <label for="mode-ang" class="mode-label">Angular</label>
           <input type="radio" id="mode-walk" name="mode" value="walk" hidden />
-          <label for="mode-walk">Walk</label>
+          <label for="mode-walk" class="mode-label">Walk</label>
           <input type="radio" id="mode-display" name="mode" value="display" hidden />
-          <label for="mode-display">Display</label>
+          <label for="mode-display" class="mode-label">Display</label>
         </div>
       </div>
 
@@ -231,15 +238,15 @@
                 </linearGradient>
               </defs>
 
-              <!-- bars above -->
-              <rect id="lt-bar-bg"   x="126" y="8"  width="140" height="10" class="ovbar-bg"/>
-              <rect id="lt-bar-fill" x="126" y="8"  width="0"   height="10" class="ovbar-fill"/>
-              <rect id="lb-bar-bg"   x="146" y="26" width="110" height="10" class="ovbar-bg"/>
-              <rect id="lb-bar-fill" x="146" y="26" width="0"   height="10" class="ovbar-fill"/>
-              <rect id="rt-bar-bg"   x="390" y="8"  width="140" height="10" class="ovbar-bg"/>
-              <rect id="rt-bar-fill" x="390" y="8"  width="0"   height="10" class="ovbar-fill"/>
-              <rect id="rb-bar-bg"   x="400" y="26" width="110" height="10" class="ovbar-bg"/>
-              <rect id="rb-bar-fill" x="400" y="26" width="0"   height="10" class="ovbar-fill"/>
+              <!-- bars above (rounded corners set via attributes) -->
+              <rect id="lt-bar-bg"   x="126" y="8"  width="140" height="10" class="ovbar-bg" rx="5" ry="5"/>
+              <rect id="lt-bar-fill" x="126" y="8"  width="0"   height="10" class="ovbar-fill" rx="5" ry="5"/>
+              <rect id="lb-bar-bg"   x="146" y="26" width="110" height="10" class="ovbar-bg" rx="5" ry="5"/>
+              <rect id="lb-bar-fill" x="146" y="26" width="0"   height="10" class="ovbar-fill" rx="5" ry="5"/>
+              <rect id="rt-bar-bg"   x="390" y="8"  width="140" height="10" class="ovbar-bg" rx="5" ry="5"/>
+              <rect id="rt-bar-fill" x="390" y="8"  width="0"   height="10" class="ovbar-fill" rx="5" ry="5"/>
+              <rect id="rb-bar-bg"   x="400" y="26" width="110" height="10" class="ovbar-bg" rx="5" ry="5"/>
+              <rect id="rb-bar-fill" x="400" y="26" width="0"   height="10" class="ovbar-fill" rx="5" ry="5"/>
 
               <!-- controller body (image starts at y=44) -->
               <g id="controller-body" transform="translate(0,44)">
@@ -345,6 +352,46 @@ function setQuadrantLight(quadrantId, active) {
   light.style.backgroundColor = active ? "#00ff00" : "#333";
   light.style.boxShadow = active ? "0 0 10px #00ff00aa" : "0 0 5px #00ffcc33";
 }
+function setAllQuadrantLights(on){
+  quadrants.forEach(id => setQuadrantLight(id, !!on));
+}
+
+/* ---- Backend → UI mappings ---- */
+const QUAD_INDEX_TO_ID = { 1:'front-right', 2:'back-right', 3:'back-left', 4:'front-left' };
+const MODE_CODE_TO_INPUT_ID = { 1:'mode-pos', 2:'mode-ang', 3:'mode-walk', 4:'mode-display' };
+
+/* Quadrant light by index (0..4)
+   0 = all lights ON; 1=FR, 2=BR, 3=BL, 4=FL */
+function setQuadrantByIndex(idx){
+  if (idx === 0) { setAllQuadrantLights(true); return; }
+  setAllQuadrantLights(false);
+  const qid = QUAD_INDEX_TO_ID[idx];
+  if (qid) setQuadrantLight(qid, true);
+}
+
+/* Mode highlight by code (0..4)
+   0 = none highlighted; 1=pos, 2=ang, 3=walk, 4=display */
+function setModeByCode(code){
+  const inputs = [
+    document.getElementById('mode-pos'),
+    document.getElementById('mode-ang'),
+    document.getElementById('mode-walk'),
+    document.getElementById('mode-display')
+  ];
+  const labels = Array.from(document.querySelectorAll('.mode-label'));
+
+  // Clear everything first
+  inputs.forEach(inp => { if (inp) inp.checked = false; });
+  labels.forEach(lab => lab.classList.remove('active'));
+
+  if (code === 0 || !(code in MODE_CODE_TO_INPUT_ID)) {
+    // None highlighted: leave radios unchecked and labels inactive
+    return;
+  }
+  const targetId = MODE_CODE_TO_INPUT_ID[code];
+  const inp = document.getElementById(targetId);
+  if (inp){ inp.checked = true; }
+}
 
 async function updateDashboard(){
   try{
@@ -383,8 +430,21 @@ async function updateDashboard(){
       card.querySelector(".overall-torque-bar").style.setProperty('--p', EE+'%');
     });
 
-    quadrants.forEach(id => setQuadrantLight(id,false));
-    if(data.activeQuadrant) setQuadrantLight(data.activeQuadrant,true);
+    // ----- Quadrant selection from backend -----
+    // Preferred integer: 0=all on; 1=FR; 2=BR; 3=BL; 4=FL
+    if (Number.isInteger(data.activeQuadrantIndex)) {
+      setQuadrantByIndex(data.activeQuadrantIndex);
+    } else {
+      // Backward-compat: string id (e.g., "front-left")
+      setAllQuadrantLights(false);
+      if (data.activeQuadrant) setQuadrantLight(data.activeQuadrant, true);
+    }
+
+    // ----- Mode highlight from backend -----
+    // 0=none, 1=positional, 2=angular, 3=walk, 4=display
+    if (typeof data.modeCode === 'number') {
+      setModeByCode(data.modeCode);
+    }
 
     if(data.serial){
       const sc=document.getElementById("serial-console");
@@ -411,7 +471,7 @@ function setCommView(which){
 }
 btnTerminal.addEventListener('click',()=>setCommView('terminal'));
 btnController.addEventListener('click',()=>setCommView('controller'));
-setCommView('controller'); // default to Controller if you want; change to 'terminal' if not
+setCommView('controller'); // default to Controller; change to 'terminal' if you prefer
 
 /* ---------- Controller overlay positions + calibration ---------- */
 const svg = document.getElementById('controller-svg');
