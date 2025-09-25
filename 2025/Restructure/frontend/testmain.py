@@ -17,7 +17,7 @@ app = FastAPI()
 latest_openrb_state = {}  # store last received motor data
 latest_timestamp = 0.0
 
-MAXMOTORTORQUE = 880
+MAXMOTORTORQUE = 88
 
 # ---- SOCKET READER (runs in background) ----
 def socket_listener(host="127.0.0.1", port=5000):
