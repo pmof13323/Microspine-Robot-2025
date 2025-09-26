@@ -51,7 +51,7 @@ serial_buffer = deque(maxlen=400)
 #  - "modeN" -> update mode_code
 #  - "legN"  -> update active_quadrant_index
 #  - other text -> appended to serial_buffer
-def socket_listener(host="127.0.0.1", port=5000):
+def socket_listener(host="127.0.0.1", port=5002):
     global latest_openrb_state, latest_timestamp, mode_code, active_quadrant_index, serial_buffer
     while True:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

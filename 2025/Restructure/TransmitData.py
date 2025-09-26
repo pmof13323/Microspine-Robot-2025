@@ -16,7 +16,7 @@ def null_legs():
 
 
 class OpenRB:
-    def __init__(self, host="127.0.0.1", port=5000, serial_port=None, baud=57600):
+    def __init__(self, host="127.0.0.1", port=5002, serial_port=None, baud=57600):
         # Serial setup
         if serial_port is None:
             if sys.platform.startswith("win"):
@@ -24,7 +24,7 @@ class OpenRB:
             elif sys.platform.startswith("linux"):
                 serial_port = "/dev/ttyUSB0"
             elif sys.platform.startswith("darwin"):
-                serial_port = "/dev/tty.usbmodem21101"
+                serial_port = "/dev/tty.usbmodem2101"
 
         self.ser = serial.Serial(serial_port, baud, timeout=0.1)
         time.sleep(2.0)
