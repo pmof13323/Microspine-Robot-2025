@@ -11,7 +11,7 @@
 
     /* Quadrant light colors */
     --quad-on: #ff8800;         /* whitish active fill */
-    --quad-on-glow: #ff7b00da;  /* soft white glow */
+    --quad-on-glow: #ffffffda;  /* soft white glow */
     --quad-off: #333;           /* inactive fill */
     --quad-off-glow: #00ffcc33; /* subtle inactive glow */
   }
@@ -431,9 +431,9 @@ async function updateDashboard(){
       card.querySelector(".knee-pitch-angle").textContent = data.positions[i][2].toFixed(1);
 
       // positions
-      card.querySelector(".x").textContent = data.positions[i][0].toFixed(2) + " mm";
-      card.querySelector(".y").textContent = data.positions[i][1].toFixed(2) + " mm";
-      card.querySelector(".z").textContent = data.positions[i][2].toFixed(2) + " mm";
+      card.querySelector(".x").textContent = data.coord[i][0].toFixed(2) + " mm";
+      card.querySelector(".y").textContent = data.coord[i][1].toFixed(2) + " mm";
+      card.querySelector(".z").textContent = data.coord[i][2].toFixed(2) + " mm";
 
       // sensors: orange active, grey off
       data.sensors[i].forEach((force,j)=>{

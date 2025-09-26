@@ -21,6 +21,27 @@ active_quadrant_index = 0   # integer expected by front-end (0..4 per your UI co
 mode_code = 0               # integer expected by front-end (0..4)
 MAXMOTORTORQUE = 88
 
+LEG_ORDER = [3, 0, 2, 1] 
+
+def reorder_list(data_list):
+    """Reorder a list according to LEG_ORDER (only if it's the right length)."""
+    if not isinstance(data_list, list) or len(data_list) != len(LEG_ORDER):
+        return data_list
+    return [data_list[i] for i in LEG_ORDER]
+
+def build_return_payload(sensors, torques_grouped, positions_grouped, coord,
+                         latest_timestamp, active_quadrant_index, mode_code, serial_buffer):
+    return {
+        "sensors": reorder_list(sensors),
+        "torques": reorder_list(torques_grouped),
+        "positions": reorder_list(positions_grouped),
+        "timestamp": latest_timestamp,
+        "activeQuadrantIndex": active_quadrant_index,
+        "modeCode": mode_code,
+        "serial": list(serial_buffer),
+        "coord": reorder_list(coord)  # reorder legs before sending
+    }
+
 # small circular buffer of non-JSON / textual serial lines to show in the UI
 serial_buffer = deque(maxlen=400)
 
@@ -77,7 +98,7 @@ def socket_listener(host="127.0.0.1", port=5000):
                                 try:
                                     idx = int(digits)
                                     active_quadrant_index = idx
-                                    serial_buffer.append(f"[LEG] {line}")
+                                    serial_buffer.append(f"LEG {line}")
                                     print(f"[FastAPI] Received leg -> {active_quadrant_index}")
                                 except ValueError:
                                     serial_buffer.append(f"[BAD LEG] {line}")
@@ -88,6 +109,7 @@ def socket_listener(host="127.0.0.1", port=5000):
                         # attempt JSON parse (motor states)
                         try:
                             parsed = json.loads(line)
+                            serial_buffer.append(line)
                             # only accept dict-like JSON for motor state
                             if isinstance(parsed, dict):
                                 latest_openrb_state = parsed
@@ -148,54 +170,70 @@ def torque_percent_conversion(value, max, min ):
 def pos_tic_angle_convert(angle, inv):
     return inv*(-360/4096*angle+180)
 
+def convert_coord_object_to_array(coord_dict):
+    if not isinstance(coord_dict, dict):
+        return []
+
+    # Sort keys numerically just in case they're strings like "1", "2"
+    keys = sorted(coord_dict.keys(), key=lambda k: int(k))
+
+    coord_array = []
+    for key in keys:
+        c = coord_dict[key]
+        coord_array.append([float(c["x"]), float(c["y"]), float(c["z"])])
+    return coord_array
+
 # --- OPENRB MOTOR DATA ---
 @app.get("/data")
 def get_robot_data():
     loads, vels, positions = [], [], []
 
+    motors = {}
     if latest_openrb_state:
-        # latest_openrb_state keys are expected numeric-ish (strings or ints)
-        motor_keys = sorted(latest_openrb_state.keys(), key=lambda x: int(x))
-        for k in motor_keys:
-            motor = latest_openrb_state[k]
-            loads.append(torque_percent_conversion(np.abs((motor.get("load", 0))), MAXMOTORTORQUE, 0))
-            vels.append(motor.get("vel", 0))
-            positions.append(pos_tic_angle_convert((motor.get("pos", 0)), 1))
+        motors = latest_openrb_state.get("motors", {})
 
-    # Group into 4 quadrants x 3 motors (and add extra motor per limb as 4th item)
-    torques_grouped = []
-    positions_grouped = []
-    quadrant_count = 4
-    motors_per_quadrant = 3
+    if motors:
+        motor_keys = sorted(motors.keys(), key=lambda x: int(x))
+        for k in motor_keys:
+            motor = motors[k]
+            loads.append(
+                torque_percent_conversion(np.abs(motor.get("load", 0)), MAXMOTORTORQUE, 0)
+            )
+            vels.append(motor.get("vel", 0))
+            positions.append(pos_tic_angle_convert(motor.get("pos", 0), 1))
+
+    # Group into 4 quadrants x 3 motors
+    torques_grouped, positions_grouped = [], []
+    quadrant_count, motors_per_quadrant = 4, 3
+
     for q in range(quadrant_count):
-        start = q * motors_per_quadrant
-        end = start + motors_per_quadrant
+        start, end = q * motors_per_quadrant, (q + 1) * motors_per_quadrant
         limb_torques = loads[start:end] if end <= len(loads) else [0] * motors_per_quadrant
 
         # Add the extra torque (motor number = q + 12)
         extra_idx = q + 12
         extra_torque = loads[extra_idx] if extra_idx < len(loads) else 0
         limb_torques.append(extra_torque)
-
         torques_grouped.append(limb_torques)
 
-        # Positions (angles) remain 3 per limb
         limb_positions = positions[start:end] if end <= len(positions) else [0] * motors_per_quadrant
         positions_grouped.append(limb_positions)
 
     sensors = getSensors()
 
-    return {
-        "sensors": sensors,
-        "torques": torques_grouped,
-        "positions": positions_grouped,
-        "timestamp": latest_timestamp,
-        # keys expected by your frontend:
-        "activeQuadrantIndex": active_quadrant_index,
-        "modeCode": mode_code,
-        # serial console lines (array)
-        "serial": list(serial_buffer)
-    }
+    coord = convert_coord_object_to_array(latest_openrb_state.get("legs", {})) 
+
+    return build_return_payload(
+        sensors,
+        torques_grouped,
+        positions_grouped,
+        coord,
+        latest_timestamp,
+        active_quadrant_index,
+        mode_code,
+        serial_buffer
+    )
+
 
 # --- CAMERA STREAM ---
 def generate_frames(video_path="asteroid.mp4"):

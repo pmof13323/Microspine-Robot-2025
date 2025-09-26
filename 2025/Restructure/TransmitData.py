@@ -8,6 +8,13 @@ import sys
 
 STATE_FILE = "frontend/openrb_state.json"
 
+def null_legs():
+    positions = {}
+    for i in (1, 2, 3, 4):
+        positions[i] = dict(x=float(0), y=float(0), z=float(0))
+    return positions
+
+
 class OpenRB:
     def __init__(self, host="127.0.0.1", port=5000, serial_port=None, baud=57600):
         # Serial setup
@@ -75,10 +82,16 @@ class OpenRB:
                 }
 
             # Build combined data AFTER parsing all motors
-            combined_data = {
-                "motors": data,
-                "legs": coord
-            }
+            if not coord:
+                combined_data = {
+                    "motors": data,
+                    "legs": null_legs()
+                }
+            else :
+                combined_data = {
+                    "motors": data,
+                    "legs": coord
+                }
 
             # Send to connected client
             self.conn.sendall((json.dumps(combined_data) + "\n").encode())

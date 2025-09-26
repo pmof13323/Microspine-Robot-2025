@@ -24,7 +24,7 @@ joystick.init()
 
 print (f"joystick detected")
 
-'''
+
 button_mapping = {
     0:"A",
     1:"B",
@@ -39,7 +39,6 @@ button_mapping = {
     10:"Right_Stick", 
 }
 '''
-
 button_mapping = {
     0:"A",
     1:"B",
@@ -53,6 +52,7 @@ button_mapping = {
     9:"Left_bumper",
     10:"Right_bumper", 
 }
+'''
 
 print("printing input")
 

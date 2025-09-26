@@ -92,9 +92,9 @@ class Controller:
             return None
         else:
             # Default (Windows/Linux) using self.dpad
+            if self.is_pressed("Start"):
+                return "start"
             x, y = self.dpad
-            if (x, y) == (0, 0):
-                return None
             if x == -1:
                 return "left"
             if x == 1:
@@ -103,5 +103,4 @@ class Controller:
                 return "up"
             if y == -1:
                 return "down"
-            if self.is_pressed("Start"):
-                return "start"
+            return None
