@@ -603,8 +603,8 @@ function frame(){
   if(!gp || !gp.connected){ cancelAnimationFrame(rafId); rafId=null; gamepadIndex=null; return; }
   const ax=gp.axes||[], bt=gp.buttons||[];
 
-  moveStick(els.lsDot, cal.ls.cx, cal.ls.cy, dz(ax[0]||0), dz(ax[1]||0), 32);
-  moveStick(els.rsDot, cal.rs.cx, cal.rs.cy, dz(ax[2]||0), dz(ax[3]||0), 34);
+  moveStick(els.lsDot, cal.ls.cx, cal.ls.cy, dz(ax[0]||0), -dz(ax[1]||0), 32);
+  moveStick(els.rsDot, cal.rs.cx, cal.rs.cy, dz(ax[2]||0), -dz(ax[3]||0), 34);
 
   els.lsGlow.setAttribute('cx', cal.ls.cx); els.lsGlow.setAttribute('cy', cal.ls.cy);
   els.rsGlow.setAttribute('cx', cal.rs.cx); els.rsGlow.setAttribute('cy', cal.rs.cy);
