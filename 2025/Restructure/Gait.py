@@ -3,7 +3,7 @@ from Position import *
 import time
 
 class AngleGait:
-    def __init__(self, controller,OpenRB):
+    def __init__(self, controller,OpenRB, Angles):
         self.name = "Angle control"
         self.controller = controller
         self.rb = OpenRB  # serial comms
@@ -15,12 +15,7 @@ class AngleGait:
         self.dead = 0.30
 
         # Angle Storage
-        self.angle_storage = {
-            1: [0.0, 0.0, 90.0],
-            2: [0.0, 0.0, 90.0],
-            3: [0.0, 0.0, 90.0],
-            4: [0.0, 0.0, 90.0],
-        }
+        self.angle_storage=Angles
         # CANgle Referemce
         self.current_angles = self.angle_storage[self.leg]
 
@@ -96,10 +91,11 @@ class AngleGait:
 
 
 class WalkGait:
-    def __init__(self, controller,OpenRB):
+    def __init__(self, controller,OpenRB, Angles):
         self.name = "Walking cycle"
         self.controller = controller
         self.rb = OpenRB  # serial comms
+        self.angles = Angles
     def step(self):
         print("Running WalkGait...")
         sync_targets = []

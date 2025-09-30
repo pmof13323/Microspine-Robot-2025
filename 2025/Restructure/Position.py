@@ -26,11 +26,11 @@ def fk_foot_contact(q1, q2, q3, o, L1, L2, Lf):
 def branch_name(q3): return "down" if q3 >= 0.0 else "up"
 
 def leg_ik_with_foot_target(
-    p_contact, o, L1, L2, Lf=100.0,
+    p_contact, o, L1, L2, Lf=112.124,
     tibia_dev_deg=20.0,
     lim1_deg=(-90.0, 90.0),
-    lim2_deg=(-120.0, 120.0),
-    lim3_deg=(-120.0, 120.0),
+    lim2_deg=(-110.0, 110.0),
+    lim3_deg=(-110.0, 130.0),
     samples=181, tol_mm=1e-3, prefer="down"
 ):
     p_contact = np.array(p_contact, float); o = np.array(o, float)
@@ -122,17 +122,18 @@ def deg_to_dxl(angle_deg, min_deg=-180.0, max_deg=180.0, resolution=4095):
     return int(np.clip((angle_deg - min_deg) / (max_deg - min_deg) * resolution, 0, resolution))
 
 class PosGait:
-    def __init__(self, controller,OpenRB):
+    def __init__(self, controller,OpenRB,Angles):
         self.name = "Positioning (Global frame)"
         self.controller = controller
         self.rb = OpenRB  # serial comms
+        self.angles = Angles
 
         # ----- geometry -----
-        self.coxa, self.femur, self.tibia, self.foot = 52.0, 107.0, 107.5, 100.0
+        self.coxa, self.femur, self.tibia, self.foot = 52.0, 107.5, 93.401, 112.124
         self.o_local = np.array([self.coxa, 0.0, 0.0])
-        self.radius_hp = 85.0
+        self.radius_hp = 98.427
 
-        self.limHipYaw, self.limHipPitch, self.limKneePitch = (-90,90), (-120,120), (-120,120)
+        self.limHipYaw, self.limHipPitch, self.limKneePitch = (-90,90), (-110,110), (-110,130)
         self.limAnkle = 20.0
 
         self.inc = 3.0
@@ -264,6 +265,7 @@ class PosGait:
 
             q1, q2, q3 = sol["qdeg"]
             q3 = -q3
+            self.angles[i] = [q1,q2,q3]
             # Example mapping: each leg has 3 servos, assign IDs in order
             base_id = (self.leg - 1) * 3
             sync_targets.extend([
@@ -297,6 +299,7 @@ class PosGait:
                         q1,q2,q3 = sol["qdeg"]
                         q3 = -q3
                         base_id = (i - 1) * 3
+                        self.angles[i] = [q1,q2,q3]
                         sync_targets.extend([
                             (base_id+1, deg_to_dxl(q1)),
                             (base_id+2, deg_to_dxl(q2)),
@@ -309,6 +312,7 @@ class PosGait:
                         continue
                     q1,q2,q3 = sol["qdeg"]
                     q3 = -q3
+                    self.angles[i] = [q1,q2,q3]
                     base_id = (i - 1) * 3
                     sync_targets.extend([
                         (base_id+1, deg_to_dxl(q1)),
