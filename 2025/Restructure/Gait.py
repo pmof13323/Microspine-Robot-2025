@@ -9,7 +9,7 @@ class AngleGait:
         self.rb = OpenRB  # serial comms
 
         # Variables
-        self.leg  = 1
+        self.leg  = None
         self.inc  = 3.0
         self.grip = 0.0
         self.dead = 0.30
@@ -17,7 +17,7 @@ class AngleGait:
         # Angle Storage
         self.angle_storage=Angles
         # CANgle Referemce
-        self.current_angles = self.angle_storage[self.leg]
+        self.current_angles = None
 
     # Leg switcher helper
     def switch_leg(self):
@@ -35,9 +35,16 @@ class AngleGait:
             # Re-point to the stored list for that leg (no resets)
             self.current_angles = self.angle_storage.setdefault(self.leg, [0.0, 0.0, 0.0])
 
+        self.rb.transmit_leg(self.leg)
+
+
     def step(self):
+
         """Update stored angles from joystick; send targets for the active leg only."""
         self.switch_leg()
+
+        if self.leg is None:
+            return
 
         sync_targets = []
         js = getattr(self.controller, "joystick", None)
