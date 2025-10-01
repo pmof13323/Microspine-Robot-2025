@@ -265,7 +265,7 @@ class PosGait:
 
             q1, q2, q3 = sol["qdeg"]
             q3 = -q3
-            self.angles[i] = [q1,q2,q3]
+            self.angles[self.leg] = [q1,q2,q3]
             # Example mapping: each leg has 3 servos, assign IDs in order
             base_id = (self.leg - 1) * 3
             sync_targets.extend([
