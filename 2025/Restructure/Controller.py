@@ -28,7 +28,20 @@ class Controller:
                 9:"Left_Stick",
                 10:"Right_Stick", 
             }
-            # elif sys.platform.startswith("linux"):
+        elif sys.platform.startswith("linux"):
+            self.button_mapping = {
+                0:"A",
+                1:"B",
+                2:"X",
+                3:"Y",
+                4:"Left_bumper",
+                5:"Right_bumper",
+                6:"Back",
+                7:"Start",
+                8:"Xbox",    
+                9:"Left_Stick",
+                10:"Right_Stick", 
+            }
                 
         elif sys.platform.startswith("darwin"):  # macOS
             self.button_mapping = {

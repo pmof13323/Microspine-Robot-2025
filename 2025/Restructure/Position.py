@@ -1,6 +1,7 @@
 import numpy as np
 import time
 from TransmitData import OpenRB
+import sys
 
 # --- helpers ---
 def clamp(x, lo, hi): return np.minimum(np.maximum(x, lo), hi)
@@ -208,7 +209,11 @@ class PosGait:
         # Left stick X (axis 0) -> +Y; Left stick Y (axis 1) -> +X
         ax0 = js.get_axis(0) if js.get_numaxes() > 0 else 0.0
         ax1 = js.get_axis(1) if js.get_numaxes() > 1 else 0.0
-        ax3 = js.get_axis(3) if js.get_numaxes() > 3 else 0.0  # right stick Y -> Z
+        if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+            ax3 = js.get_axis(3) if js.get_numaxes() > 3 else 0.0 
+        elif sys.platform.startswith("linux"):
+            ax3 = js.get_axis(4) if js.get_numaxes() > 3 else 0.0 
+
         if abs(ax0) > self.dead: dy -= ax0 * self.inc  # matches your existing sign convention
         if abs(ax1) > self.dead: dx -= ax1 * self.inc
         if abs(ax3) > self.dead: dz -= ax3 * self.inc
@@ -239,20 +244,37 @@ class PosGait:
             if self.last_valid[self.leg]["Pw"] is not None:
                 self.Pw = self.last_valid[self.leg]["Pw"].copy()
 
-            js = self.controller.joystick
-            trigL = trigR = False
-            for i in range(js.get_numaxes()):
-                val = js.get_axis(i)
-                if i in (4,5):
-                    if val >= 0:
-                        trigL = trigL or (i==4)
-                        trigR = trigR or (i==5)
-                    continue
-                if abs(val) > self.dead:
-                    if i==0: self.Pw[1] -= val*self.inc
-                    elif i==1: self.Pw[0] -= val*self.inc
-                    elif i==3: self.Pw[2] -= val*self.inc
-            self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
+            if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
+                js = self.controller.joystick
+                trigL = trigR = False
+                for i in range(js.get_numaxes()):
+                    val = js.get_axis(i)
+                    if i in (4,5):
+                        if val >= 0:
+                            trigL = trigL or (i==4)
+                            trigR = trigR or (i==5)
+                        continue
+                    if abs(val) > self.dead:
+                        if i==0: self.Pw[1] -= val*self.inc
+                        elif i==1: self.Pw[0] -= val*self.inc
+                        elif i==3: self.Pw[2] -= val*self.inc
+                self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
+
+            elif sys.platform.startswith("linux"):
+                js = self.controller.joystick
+                trigL = trigR = False
+                for i in range(js.get_numaxes()):
+                    val = js.get_axis(i)
+                    if i in (2,5):
+                        if val >= 0:
+                            trigL = trigL or (i==2)
+                            trigR = trigR or (i==5)
+                        continue
+                    if abs(val) > self.dead:
+                        if i==0: self.Pw[1] -= val*self.inc
+                        elif i==1: self.Pw[0] -= val*self.inc
+                        elif i==4: self.Pw[2] -= val*self.inc
+                self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
 
             sol, feasible = self._solve_leg_for_world_target(self.leg, self.Pw)
             if feasible:

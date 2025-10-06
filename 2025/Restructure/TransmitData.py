@@ -22,7 +22,7 @@ class OpenRB:
             if sys.platform.startswith("win"):
                 serial_port = "COM4"
             elif sys.platform.startswith("linux"):
-                serial_port = "/dev/ttyUSB0"
+                serial_port = "/dev/ttyACM0"
             elif sys.platform.startswith("darwin"):
                 serial_port = "/dev/tty.usbmodem2101"
 

@@ -174,7 +174,7 @@
   <div class="camera-panel">
     <div class="camera" id="camera-box">
       <div class="camera-title">Camera</div>
-      <img id="camera-feed" src="http://localhost:8000/camera/stream" alt="Camera Feed" />
+      <img id="camera-feed" src="http://172.20.10.5:8000/camera/stream" alt="Camera Feed" />
     </div>
   </div>
 
@@ -411,7 +411,7 @@ function setModeByCode(code){
 
 async function updateDashboard(){
   try{
-    const res = await fetch("http://localhost:8000/data");
+    const res = await fetch("http://172.20.10.5:8000/data");
     const data = await res.json();
 
     quadrants.forEach((id,i)=>{

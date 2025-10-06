@@ -53,23 +53,40 @@ class AngleGait:
         if js is not None:
             for i in range(js.get_numaxes()):
                 val = js.get_axis(i)
-
-                if i in (4, 5):
-                    if val >= 0:
-                        trigL = trigL or (i == 4)
-                        trigR = trigR or (i == 5)
-                    continue
-
-                if abs(val) > self.dead:
+                if (sys.platform.startswith("win") or sys.platform.startswith("darwin")):
+                    if i in (4, 5):
+                        if val >= 0:
+                            trigL = trigL or (i == 4)
+                            trigR = trigR or (i == 5)
+                        continue
+                    
+                    if abs(val) > self.dead:
                     # Map axes -> joints: 0->q1 (yaw), 1->q2 (hip pitch), 3->q3 (knee pitch)
-                    if i == 0:
-                        self.current_angles[0] -= val * self.inc
-                    elif i == 1:
-                        self.current_angles[1] -= val * self.inc
-                    elif i == 3:
-                        self.current_angles[2] += val * self.inc
+                        if i == 0:
+                            self.current_angles[0] -= val * self.inc
+                        elif i == 1:
+                            self.current_angles[1] -= val * self.inc
+                        elif i == 3:
+                            self.current_angles[2] += val * self.inc
+                    self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
 
-        self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
+                elif sys.platform.startswith("linux") :
+                    if i in (2, 5):
+                        if val >= 0:
+                            trigL = trigL or (i == 2)
+                            trigR = trigR or (i == 5)
+                        continue
+                    
+                    if abs(val) > self.dead:
+                    # Map axes -> joints: 0->q1 (yaw), 1->q2 (hip pitch), 3->q3 (knee pitch)
+                        if i == 0:
+                            self.current_angles[0] -= val * self.inc
+                        elif i == 1:
+                            self.current_angles[1] -= val * self.inc
+                        elif i == 4:
+                            self.current_angles[2] += val * self.inc
+                    self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
+
 
         q1, q2, q3 = self.current_angles
         base_id = (self.leg - 1) * 3
@@ -78,6 +95,7 @@ class AngleGait:
                 (base_id + 1, deg_to_dxl(q1)),
                 (base_id + 2, deg_to_dxl(q2)),
                 (base_id + 3, deg_to_dxl(q3)),
+                (self.leg+12, self.grip)
             ])
         except NameError:
             raise RuntimeError("deg_to_dxl(q_deg) is not defined in this module. Please provide it.")
