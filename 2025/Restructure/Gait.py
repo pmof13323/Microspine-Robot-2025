@@ -1,4 +1,5 @@
 from Position import *
+from Walk import *
 
 import time
 
@@ -113,31 +114,6 @@ class AngleGait:
         print("+-------------------------------------------------------+")
         time.sleep(0.03)  # keep loop quick but not spammy
 
-
-
-class WalkGait:
-    def __init__(self, controller,OpenRB, Angles):
-        self.name = "Walking cycle"
-        self.controller = controller
-        self.rb = OpenRB  # serial comms
-        self.angles = Angles
-    def step(self):
-        print("Running WalkGait...")
-        sync_targets = []
-
-
-
-        print(f"\n")
-        print(f" Walking Control Mode ")
-        print("+-------------------------------------------------------+")
-        print(" ")
-        print(" ")
-        print("                    Under Construction                   ")
-        print(" ")
-        print(" ")
-        print("+-------------------------------------------------------+")
-        self.rb.send_sync_positions(sync_targets)
-        print("+-------------------------------------------------------+")
 
 class inital:
     def __init__(self,OpenRB):
