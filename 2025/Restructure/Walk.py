@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from TransmitData import OpenRB
-from PosGait import (
+from Position import (
     leg_ik_with_foot_target,
     world_to_leg_yaw_frame,
     hip_yaw_world,
@@ -64,8 +64,8 @@ class WalkGait:
 
         # Limits/params
         self.dead = 0.30
-        self.incrementer = 30.0     # mm to lift
-        self.sticky = True          # EE “stick” flag
+        self.incrementer = 75.0     # mm to lift
+        self.sticky = False          # EE “stick” flag
         self.maxCurrent = 88.0 #mA
 
         # Planner (composition)
@@ -107,7 +107,7 @@ class WalkGait:
         # Returns a Bool
             # True if sensors give good reading after EE current reached
             # False if sensors give bad reading after EE current reached
-    def appedEE(self, legNum, stickyFlag):
+    def appendEE(self, legNum, stickyFlag):
         # Checking for sticky flag
         if not stickyFlag:
             return True
@@ -183,7 +183,7 @@ class WalkGait:
             return False
         self._send_leg_angles(legNum, solLift["qdeg"])
         self.ee[legNum] = [float(legXYZLift[0]), float(legXYZLift[1]), float(legXYZLift[2])]
-        time.sleep(1.0)
+        time.sleep(2.0)
             
         # Move EE to requested x and y location
         legXYZTrans = np.array([goalPos[0], goalPos[1], legXYZLift[2]], float)
@@ -198,7 +198,7 @@ class WalkGait:
             solTrans, legXYZTrans = solTransB, retry
         self._send_leg_angles(legNum, solTrans["qdeg"])
         self.ee[legNum] = [float(legXYZTrans[0]), float(legXYZTrans[1]), float(legXYZTrans[2])]
-        time.sleep(3.0)
+        time.sleep(5.0)
 
         # Translate the EE -z
         legXYZGoal = goalPos.copy()
@@ -207,7 +207,7 @@ class WalkGait:
             return False
         self._send_leg_angles(legNum, solGoal["qdeg"])
         self.ee[legNum] = [float(legXYZGoal[0]), float(legXYZGoal[1]), float(legXYZGoal[2])]
-        time.sleep(1.0)
+        time.sleep(2.0)
 
         # Body move happens outside this function.
         return True
@@ -365,14 +365,18 @@ class WalkGait:
                     if i == 0: # North/South
                         if val > 0: # North
                             self.direction = 'N'
+                            print('N')
                         if val < 0: # South
                             self.direction = 'S'
+                            print('S')
 
                     elif i == 1: #East/West
                         if val > 0: # East
                             self.direction = 'E'
+                            print('E')
                         if val < 0: # West
                             self.direction = 'W'
+                            print('W')
 
         if self.direction is not None:
             ok = self.moveThisDirection(self.direction)

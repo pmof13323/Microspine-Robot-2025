@@ -7,7 +7,7 @@ import Controller
 
 if __name__ == "__main__":
     controller = Controller.Controller()
-    openrb= OpenRB()
+    
 
     motorAngles = {
             1: [0.0, 0.0, 90.0],
@@ -29,7 +29,8 @@ if __name__ == "__main__":
             3: 0.0,
             4: 0.0,
         }
-    
+    openrb= OpenRB("127.0.0.1",5002,None,57600,eeCurrents)
+
     gaits = [inital(openrb),PosGait(controller,openrb,motorAngles,eePositions), AngleGait(controller,openrb,motorAngles), WalkGait(controller,openrb,motorAngles,eePositions,eeCurrents)]
     selector = ModeSelector.ModeSelector(gaits,openrb)
 
