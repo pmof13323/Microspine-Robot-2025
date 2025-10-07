@@ -4,13 +4,14 @@ from TransmitData import OpenRB
 import sys
 
 # --- helpers ---
-def clamp(x, lo, hi): return np.minimum(np.maximum(x, lo), hi)
+def clamp(x, lo, hi): 
+    return np.minimum(np.maximum(x, lo), hi)
 
 def Rz(theta):
     c, s = np.cos(theta), np.sin(theta)
-    return np.array([[c,-s,0.0],
-                     [s, c,0.0],
-                     [0.0,0.0,1.0]])
+    return np.array([[c, -s, 0.0],
+                     [s,  c, 0.0],
+                     [0.0, 0.0, 1.0]])
 
 def fk_ball_point(q1, q2, q3, o, L1, L2):
     c1, s1 = np.cos(q1), np.sin(q1)
@@ -24,7 +25,8 @@ def fk_foot_contact(q1, q2, q3, o, L1, L2, Lf):
     ball = fk_ball_point(q1, q2, q3, o, L1, L2)
     return ball + np.array([0.0, 0.0, -Lf])
 
-def branch_name(q3): return "down" if q3 >= 0.0 else "up"
+def branch_name(q3): 
+    return "down" if q3 >= 0.0 else "up"
 
 def leg_ik_with_foot_target(
     p_contact, o, L1, L2, Lf=112.124,
@@ -39,24 +41,37 @@ def leg_ik_with_foot_target(
     d = p_ball - o
 
     d2r = np.pi/180.0
-    lim1 = np.array(lim1_deg)*d2r; lim2 = np.array(lim2_deg)*d2r; lim3 = np.array(lim3_deg)*d2r
+    lim1 = np.array(lim1_deg)*d2r
+    lim2 = np.array(lim2_deg)*d2r
+    lim3 = np.array(lim3_deg)*d2r
 
-    q1_star = np.arctan2(d[1], d[0]); q1 = clamp(q1_star, lim1[0], lim1[1])
+    q1_star = np.arctan2(d[1], d[0])
+    q1 = clamp(q1_star, lim1[0], lim1[1])
 
     c, s = np.cos(-q1), np.sin(-q1)
-    Rz_local = np.array([[c,-s,0],[s,c,0],[0,0,1]])
-    dp = Rz_local @ d; r, z = float(np.hypot(dp[0], dp[1])), float(dp[2])
+    Rz_local = np.array([[c, -s, 0],
+                         [s,  c, 0],
+                         [0,  0, 1]])
+    dp = Rz_local @ d
+    r, z = float(np.hypot(dp[0], dp[1])), float(dp[2])
 
-    dev = float(tibia_dev_deg)*d2r; theta_center = -np.pi/2
+    dev = float(tibia_dev_deg)*d2r
+    theta_center = -np.pi/2
     theta_lo, theta_hi = theta_center - dev, theta_center + dev
     thetas = np.linspace(theta_lo, theta_hi, int(samples))
 
-    best_ok = None; best_any = None
+    best_ok = None
+    best_any = None
     for theta in thetas:
-        kd_r = r - L2*np.cos(theta); kd_z = z - L2*np.sin(theta)
-        if kd_r == 0.0 and kd_z == 0.0: kd_r = 1e-12
-        q2_star = np.arctan2(kd_z, kd_r); q3_star = theta - q2_star
-        q2 = clamp(q2_star, lim2[0], lim2[1]); q3 = clamp(q3_star, lim3[0], lim3[1])
+        kd_r = r - L2*np.cos(theta)
+        kd_z = z - L2*np.sin(theta)
+        if kd_r == 0.0 and kd_z == 0.0:
+            kd_r = 1e-12
+        q2_star = np.arctan2(kd_z, kd_r)
+        q3_star = theta - q2_star
+
+        q2 = clamp(q2_star, lim2[0], lim2[1])
+        q3 = clamp(q3_star, lim3[0], lim3[1])
 
         theta_actual = q2 + q3
         dev_actual = abs(theta_actual + np.pi/2)
@@ -64,15 +79,21 @@ def leg_ik_with_foot_target(
 
         p_hat = fk_foot_contact(q1, q2, q3, o, L1, L2, Lf)
         err = float(np.linalg.norm(p_hat - p_contact))
-        cand = dict(q1=q1,q2=q2,q3=q3, err_mm=err, tibia_ok=bool(tibia_ok),
-                    tibia_tilt_deg=float(np.degrees(theta_actual + np.pi/2)),
-                    branch=branch_name(q3))
-        if (best_any is None) or (cand["err_mm"] < best_any["err_mm"] - 1e-12): best_any = cand
+        cand = dict(
+            q1=q1, q2=q2, q3=q3, err_mm=err, tibia_ok=bool(tibia_ok),
+            tibia_tilt_deg=float(np.degrees(theta_actual + np.pi/2)),
+            branch=branch_name(q3)
+        )
+        if (best_any is None) or (cand["err_mm"] < best_any["err_mm"] - 1e-12):
+            best_any = cand
         if cand["tibia_ok"]:
-            if (best_ok is None) or (cand["err_mm"] < best_ok["err_mm"] - 1e-12): best_ok = cand
+            if (best_ok is None) or (cand["err_mm"] < best_ok["err_mm"] - 1e-12):
+                best_ok = cand
             elif abs(cand["err_mm"] - best_ok["err_mm"]) <= 1e-12:
-                if prefer=="down" and cand["branch"]=="down" and best_ok["branch"]!="down": best_ok = cand
-                if prefer=="up"   and cand["branch"]=="up"   and best_ok["branch"]!="up":   best_ok = cand
+                if prefer == "down" and cand["branch"] == "down" and best_ok["branch"] != "down":
+                    best_ok = cand
+                if prefer == "up" and cand["branch"] == "up" and best_ok["branch"] != "up":
+                    best_ok = cand
 
     best = best_ok if best_ok is not None else best_any
     qdeg = tuple(np.degrees([best["q1"], best["q2"], best["q3"]]))
@@ -80,11 +101,10 @@ def leg_ik_with_foot_target(
     best["feasible"] = (best["tibia_ok"] and best["err_mm"] <= tol_mm)
     return best
 
-
 # ================= World <-> Leg transforms =================
-def leg_base_yaw_rad(leg:int) -> float:
+def leg_base_yaw_rad(leg: int) -> float:
     """
-    World frame convention: +X forward, +Y left, +Z up.
+    World frame: +X forward, +Y left, +Z up.
     Robot layout (front between legs 1 and 4):
       1 = front-right -> ψ = -45°
       2 = back-right  -> ψ = -135°
@@ -97,18 +117,17 @@ def leg_base_yaw_rad(leg:int) -> float:
     if leg == 4: return  np.pi/4    # front-left
     raise ValueError("leg must be 1..4")
 
-
-def hip_pitch_world(leg:int, radius:float) -> np.ndarray:
+def hip_pitch_world(leg: int, radius: float) -> np.ndarray:
     """Hip-pitch joint position in world frame on circle of given radius."""
     psi = leg_base_yaw_rad(leg)
     return Rz(psi) @ np.array([radius, 0.0, 0.0])
 
-def hip_yaw_world(leg:int, radius:float, o_local:np.ndarray) -> np.ndarray:
+def hip_yaw_world(leg: int, radius: float, o_local: np.ndarray) -> np.ndarray:
     """Hip-yaw world position, given hip-pitch on circle and o (yaw->pitch) in leg frame."""
     psi = leg_base_yaw_rad(leg)
     return hip_pitch_world(leg, radius) - (Rz(psi) @ o_local)
 
-def world_to_leg_yaw_frame(Pw:np.ndarray, leg:int, radius:float, o_local:np.ndarray) -> np.ndarray:
+def world_to_leg_yaw_frame(Pw: np.ndarray, leg: int, radius: float, o_local: np.ndarray) -> np.ndarray:
     """
     Convert a world foot-contact target Pw into the leg's hip-yaw frame coordinates
     (the frame expected by leg_ik_with_foot_target).
@@ -117,24 +136,23 @@ def world_to_leg_yaw_frame(Pw:np.ndarray, leg:int, radius:float, o_local:np.ndar
     HYw = hip_yaw_world(leg, radius, o_local)
     return Rz(-psi) @ (Pw - HYw)
 
-
-
 def deg_to_dxl(angle_deg, min_deg=-180.0, max_deg=180.0, resolution=4095):
     return int(np.clip((angle_deg - min_deg) / (max_deg - min_deg) * resolution, 0, resolution))
 
 class PosGait:
-    def __init__(self, controller,OpenRB,Angles):
+    def __init__(self, controller, OpenRB, Angles, eePos):
         self.name = "Positioning (Global frame)"
         self.controller = controller
-        self.rb = OpenRB  # serial comms
+        self.rb = OpenRB              # serial comms
         self.angles = Angles
+        self.eePositions = eePos      # <-- SHARED DICT (passed by reference)
 
         # ----- geometry -----
         self.coxa, self.femur, self.tibia, self.foot = 52.0, 107.5, 93.401, 112.124
         self.o_local = np.array([self.coxa, 0.0, 0.0])
         self.radius_hp = 98.427
 
-        self.limHipYaw, self.limHipPitch, self.limKneePitch = (-90,90), (-110,110), (-110,130)
+        self.limHipYaw, self.limHipPitch, self.limKneePitch = (-90, 90), (-110, 110), (-110, 130)
         self.limAnkle = 20.0
 
         self.inc = 3.0
@@ -143,11 +161,11 @@ class PosGait:
         self.grip = 0.0
         self.mode = 'leg'
         self.body_T = np.zeros(3)
-        self.body_anchors = {i: None for i in (1,2,3,4)}
-        self.last_valid = {i: {"sol":None, "Pw":None} for i in (1,2,3,4)}
+        self.body_anchors = {i: None for i in (1, 2, 3, 4)}
+        self.last_valid = {i: {"sol": None, "Pw": None} for i in (1, 2, 3, 4)}
 
         seed_local_leg1 = np.array([159.0, 0.0, -207.5])
-        for i in (1,2,3,4):
+        for i in (1, 2, 3, 4):
             psi = leg_base_yaw_rad(i)
             HYw = hip_yaw_world(i, self.radius_hp, self.o_local)
             Pw = HYw + (Rz(psi) @ seed_local_leg1)
@@ -160,26 +178,23 @@ class PosGait:
             if sol["tibia_ok"] and sol["feasible"]:
                 self.last_valid[i]["sol"] = sol
                 self.last_valid[i]["Pw"]  = Pw
+                # Initialize shared eePositions from seeds
+                self.eePositions[i] = [float(Pw[0]), float(Pw[1]), float(Pw[2])]
 
-        self.Pw = self.last_valid[1]["Pw"].copy() if self.last_valid[1]["Pw"] is not None else np.array([self.radius_hp+150.0,0.0,-200.0],float)
-
+        self.Pw = (self.last_valid[1]["Pw"].copy() if self.last_valid[1]["Pw"] is not None 
+                   else np.array([self.radius_hp + 150.0, 0.0, -200.0], float))
 
     def get_all_leg_positions(self):
         """
-        Return a dictionary with the latest x, y, z positions (in mm)
-        for all legs (1–4). If a leg has no valid position, returns None for it.
+        Return latest x,y,z for all legs and keep eePositions in sync.
         """
-        positions = {}
         for i in (1, 2, 3, 4):
             Pw = self.last_valid[i]["Pw"]
             if Pw is not None:
-                positions[i] = dict(x=float(Pw[0]), y=float(Pw[1]), z=float(Pw[2]))
-            else:
-                positions[i] = None
-        return positions
+                self.eePositions[i] = [float(Pw[0]), float(Pw[1]), float(Pw[2])]
+        return self.eePositions
 
-
-    def _solve_leg_for_world_target(self, leg:int, Pw_world:np.ndarray):
+    def _solve_leg_for_world_target(self, leg: int, Pw_world: np.ndarray):
         """Return (sol, feasible_bool) for a given leg and world foot contact Pw_world."""
         p_leg = world_to_leg_yaw_frame(Pw_world, leg, self.radius_hp, self.o_local)
         sol = leg_ik_with_foot_target(
@@ -192,15 +207,14 @@ class PosGait:
 
     def _capture_body_anchors(self):
         """Freeze current feet world positions to act as fixed anchors for body mode."""
-        for i in (1,2,3,4):
+        for i in (1, 2, 3, 4):
             if self.last_valid[i]["Pw"] is not None:
                 self.body_anchors[i] = self.last_valid[i]["Pw"].copy()
             else:
                 psi = leg_base_yaw_rad(i)
                 HYw = hip_yaw_world(i, self.radius_hp, self.o_local)
                 self.body_anchors[i] = HYw + (Rz(psi) @ np.array([159.0, 0.0, -207.5]))
-        # zero body translation when entering body mode
-        self.body_T[:] = 0.0
+        self.body_T[:] = 0.0  # zero body translation
 
     def _read_axes_xy_z(self):
         """Read sticks as (dx, dy, dz) increments in WORLD frame based on self.inc & deadzone."""
@@ -210,11 +224,11 @@ class PosGait:
         ax0 = js.get_axis(0) if js.get_numaxes() > 0 else 0.0
         ax1 = js.get_axis(1) if js.get_numaxes() > 1 else 0.0
         if sys.platform.startswith("win") or sys.platform.startswith("darwin"):
-            ax3 = js.get_axis(3) if js.get_numaxes() > 3 else 0.0 
+            ax3 = js.get_axis(3) if js.get_numaxes() > 3 else 0.0
         elif sys.platform.startswith("linux"):
-            ax3 = js.get_axis(4) if js.get_numaxes() > 3 else 0.0 
+            ax3 = js.get_axis(4) if js.get_numaxes() > 3 else 0.0
 
-        if abs(ax0) > self.dead: dy -= ax0 * self.inc  # matches your existing sign convention
+        if abs(ax0) > self.dead: dy -= ax0 * self.inc
         if abs(ax1) > self.dead: dx -= ax1 * self.inc
         if abs(ax3) > self.dead: dz -= ax3 * self.inc
         return np.array([dx, dy, dz], float)
@@ -222,6 +236,7 @@ class PosGait:
     def step(self):
         sync_targets = []  # accumulate (id, pos) pairs here
 
+        # Mode toggles
         if self.controller.is_pressed("Right_bumper"):
             if self.mode != 'body':
                 self.mode = 'body'
@@ -235,7 +250,7 @@ class PosGait:
 
         if self.mode == 'leg':
             # select leg
-            if self.controller.is_pressed("X"): self.leg = 4
+            if self.controller.is_pressed("X"):   self.leg = 4
             elif self.controller.is_pressed("Y"): self.leg = 1
             elif self.controller.is_pressed("B"): self.leg = 2
             elif self.controller.is_pressed("A"): self.leg = 3
@@ -249,15 +264,15 @@ class PosGait:
                 trigL = trigR = False
                 for i in range(js.get_numaxes()):
                     val = js.get_axis(i)
-                    if i in (4,5):
+                    if i in (4, 5):
                         if val >= 0:
-                            trigL = trigL or (i==4)
-                            trigR = trigR or (i==5)
+                            trigL = trigL or (i == 4)
+                            trigR = trigR or (i == 5)
                         continue
                     if abs(val) > self.dead:
-                        if i==0: self.Pw[1] -= val*self.inc
-                        elif i==1: self.Pw[0] -= val*self.inc
-                        elif i==3: self.Pw[2] -= val*self.inc
+                        if   i == 0: self.Pw[1] -= val * self.inc
+                        elif i == 1: self.Pw[0] -= val * self.inc
+                        elif i == 3: self.Pw[2] -= val * self.inc
                 self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
 
             elif sys.platform.startswith("linux"):
@@ -265,21 +280,24 @@ class PosGait:
                 trigL = trigR = False
                 for i in range(js.get_numaxes()):
                     val = js.get_axis(i)
-                    if i in (2,5):
+                    if i in (2, 5):
                         if val >= 0:
-                            trigL = trigL or (i==2)
-                            trigR = trigR or (i==5)
+                            trigL = trigL or (i == 2)
+                            trigR = trigR or (i == 5)
                         continue
                     if abs(val) > self.dead:
-                        if i==0: self.Pw[1] -= val*self.inc
-                        elif i==1: self.Pw[0] -= val*self.inc
-                        elif i==4: self.Pw[2] -= val*self.inc
+                        if   i == 0: self.Pw[1] -= val * self.inc
+                        elif i == 1: self.Pw[0] -= val * self.inc
+                        elif i == 4: self.Pw[2] -= val * self.inc
                 self.grip = -1.0 if (trigL and not trigR) else (+1.0 if (trigR and not trigL) else 0.0)
 
+            # Solve and accept if feasible
             sol, feasible = self._solve_leg_for_world_target(self.leg, self.Pw)
             if feasible:
                 self.last_valid[self.leg]["sol"] = sol
                 self.last_valid[self.leg]["Pw"]  = self.Pw.copy()
+                # keep the shared dict in sync
+                self.eePositions[self.leg] = [float(self.Pw[0]), float(self.Pw[1]), float(self.Pw[2])]
             else:
                 sol = self.last_valid[self.leg]["sol"] if self.last_valid[self.leg]["sol"] else sol
                 if self.last_valid[self.leg]["Pw"] is not None:
@@ -287,14 +305,13 @@ class PosGait:
 
             q1, q2, q3 = sol["qdeg"]
             q3 = -q3
-            self.angles[self.leg] = [q1,q2,q3]
-            # Example mapping: each leg has 3 servos, assign IDs in order
+            self.angles[self.leg] = [q1, q2, q3]
             base_id = (self.leg - 1) * 3
             sync_targets.extend([
                 (base_id+1, deg_to_dxl(q1)),
                 (base_id+2, deg_to_dxl(q2)),
                 (base_id+3, deg_to_dxl(q3)),
-                (self.leg+12, self.grip)
+                (self.leg+12, self.grip),
             ])
 
         else:  # BODY MODE
@@ -303,38 +320,47 @@ class PosGait:
                 T_candidate = self.body_T + dT
                 all_ok = True
                 sols = {}
-                Pws={}
-                for i in (1,2,3,4):
+                pw_eff_map = {}  # NEW: store per-leg effective Pw
+
+                for i in (1, 2, 3, 4):
                     Pw_eff = self.body_anchors[i] - T_candidate
-                    sol, ok= self._solve_leg_for_world_target(i, Pw_eff)
+                    sol, ok = self._solve_leg_for_world_target(i, Pw_eff)
                     sols[i] = (sol, ok, Pw_eff)
-                    Pws[i] = ()
+                    pw_eff_map[i] = Pw_eff
                     if not ok:
                         all_ok = False
                         break
+
                 if all_ok:
                     self.body_T = T_candidate
-                    for i in (1,2,3,4):
-                        sol, _, Pws = sols[i]
+                    for i in (1, 2, 3, 4):
+                        sol, _, Pw_eff = sols[i]
                         self.last_valid[i]["sol"] = sol
-                        self.last_valid[i]["Pw"]  = Pws
-                        q1,q2,q3 = sol["qdeg"]
+                        self.last_valid[i]["Pw"]  = Pw_eff
+                        # keep the shared dict in sync
+                        self.eePositions[i] = [float(Pw_eff[0]), float(Pw_eff[1]), float(Pw_eff[2])]
+
+                        q1, q2, q3 = sol["qdeg"]
                         q3 = -q3
                         base_id = (i - 1) * 3
-                        self.angles[i] = [q1,q2,q3]
+                        self.angles[i] = [q1, q2, q3]
                         sync_targets.extend([
                             (base_id+1, deg_to_dxl(q1)),
                             (base_id+2, deg_to_dxl(q2)),
                             (base_id+3, deg_to_dxl(q3)),
                         ])
             else:
-                for i in (1,2,3,4):
+                # No movement; keep outputs and sync eePositions to last_valid
+                for i in (1, 2, 3, 4):
                     sol = self.last_valid[i]["sol"]
+                    Pw  = self.last_valid[i]["Pw"]
+                    if Pw is not None:
+                        self.eePositions[i] = [float(Pw[0]), float(Pw[1]), float(Pw[2])]
                     if sol is None:
                         continue
-                    q1,q2,q3 = sol["qdeg"]
+                    q1, q2, q3 = sol["qdeg"]
                     q3 = -q3
-                    self.angles[i] = [q1,q2,q3]
+                    self.angles[i] = [q1, q2, q3]
                     base_id = (i - 1) * 3
                     sync_targets.extend([
                         (base_id+1, deg_to_dxl(q1)),
@@ -349,12 +375,13 @@ class PosGait:
             print(f"+-------------------------------------+-----------------+")
             print(f" Controlling Leg Number {self.leg}             | Grip Mode: {self.grip:.2f}")
             print(f"+----------+--------------------------+-----------------+")
-            print(f" Angles    | HY: {q1:.2f}deg,  HP: {q2:.2f}deg, KP: {q3:.2f}deg")
+            print(f" Angles    | HY: {self.angles[self.leg][0]:.2f}deg,  HP: {self.angles[self.leg][1]:.2f}deg, KP: {self.angles[self.leg][2]:.2f}deg")
             print(f"+----------+--------------------------------------------+")
             print(f" Positions | x = {self.Pw[0]:.1f}mm, y = {self.Pw[1]:.1f}mm, z = {self.Pw[2]:.1f}mm")
             print(f"+----------+--------------------------------------------+")
             self.rb.send_sync_positions(sync_targets)
             print(f"+-------------------------------------------------------+")
             time.sleep(0.001)  # reduce serial spam but keep fast loop
-            return (self.get_all_leg_positions())
 
+        # Always return the shared dict (kept in sync)
+        return self.get_all_leg_positions()

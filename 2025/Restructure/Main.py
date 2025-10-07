@@ -15,8 +15,22 @@ if __name__ == "__main__":
             3: [0.0, 0.0, 90.0],
             4: [0.0, 0.0, 90.0],
         }
+
+    eePositions = {
+            1: [0.0, 0.0, 0.0],
+            2: [0.0, 0.0, 0.0],
+            3: [0.0, 0.0, 0.0],
+            4: [0.0, 0.0, 0.0],
+        }
+
+    eeCurrents = {
+            1: 0.0,
+            2: 0.0,
+            3: 0.0,
+            4: 0.0,
+        }
     
-    gaits = [inital(openrb),PosGait(controller,openrb,motorAngles), AngleGait(controller,openrb,motorAngles), WalkGait(controller,openrb,motorAngles)]
+    gaits = [inital(openrb),PosGait(controller,openrb,motorAngles,eePositions), AngleGait(controller,openrb,motorAngles), WalkGait(controller,openrb,motorAngles,eePositions,eeCurrents)]
     selector = ModeSelector.ModeSelector(gaits,openrb)
 
     # Map D-pad directions to gait indices
