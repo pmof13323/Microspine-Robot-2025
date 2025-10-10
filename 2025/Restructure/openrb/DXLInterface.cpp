@@ -349,6 +349,23 @@ String DXLInterface::getReadData(){
     return line;
 }
 
+int DXLInterface::MotorStatus() {
+    for (int motorID = 1; motorID<=16; motorID++){
+        uint8_t status = dxl.readControlTableItem(40, motorID);
+
+        if (status & 0x10) { // Bit 4 = Overtorque
+
+            // dxl.txInstPacket(motorID, 0x08, NULL, 0);
+            dxl.reboot(motorID);
+
+            delay(200);
+
+            // Re-enable torque
+            enableDXLTorque(motorID);
+        }
+    }
+    return 0;
+}
 
 int DXLInterface::writeDXLData() {
     int try_count = 0;

@@ -151,4 +151,6 @@ void loop(){
         DEBUG_SERIAL.println(dataLine);   
     }
 
+    dxlInterface.MotorStatus();
+
 }
